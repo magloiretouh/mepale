@@ -1,0 +1,167 @@
+[2026-03-21 11:02:43] INFO mepale: OF OF-2603-0001 confirmé.
+[2026-03-21 14:07:20] INFO mepale: Inventaire INV-2603-0002 annulé par Panawe Touh (Administrateur)
+[2026-03-21 14:07:28] INFO mepale: Inventaire INV-2603-0001 annulé par Panawe Touh (Administrateur)
+[2026-03-21 14:08:09] INFO mepale: Inventaire INV-2603-0003 validé par Panawe Touh (Administrateur)
+[2026-03-21 14:29:17] INFO mepale: Mouvement manuel [Ajustement positif (inventaire)] 10.000 × Piment Dapaong par Panawe Touh (Administrateur)
+[2026-03-21 14:29:32] INFO mepale: OF OF-2603-0001 démarré.
+[2026-03-21 14:30:03] INFO mepale: OF OF-2603-0001 terminé. Quantité produite: 300.0
+[2026-03-22 14:20:44] INFO mepale: OF OF-2603-0003 : 2 composant(s) réservés en stock.
+[2026-03-22 14:20:44] INFO mepale: OF OF-2603-0003 confirmé.
+[2026-03-22 14:21:41] INFO mepale: Mouvement manuel [Ajustement positif (inventaire)] 50.000 × Piment Dapaong par Panawe Touh (Administrateur)
+[2026-03-23 10:24:47] INFO mepale: OF OF-2603-0003 démarré.
+[2026-03-23 10:25:03] INFO mepale: OF OF-2603-0003 terminé. Quantité produite: 400.0
+[2026-03-23 10:27:31] INFO mepale: Lot PF créé : LOT-20260323-0001
+[2026-03-23 10:27:31] INFO mepale: OF OF-2603-0003 : réservation stock libérée (mode héritage).
+[2026-03-23 10:27:31] INFO mepale: OF OF-2603-0003 — sortie stock MP via nomenclature live (héritage).
+[2026-03-23 10:27:31] WARNING mepale: OF OF-2603-0003 : stock insuffisant pour mat001 — manque 12.0 tonne
+[2026-03-23 10:27:31] WARNING mepale: OF OF-2603-0003 : stock insuffisant pour Piment Dapaong — manque 8.0 tonne
+[2026-03-23 10:27:31] INFO mepale: Entrée stock : Piment en boite × 400.000 (LOT-20260323-0001)
+[2026-03-23 10:27:31] INFO mepale: OF OF-2603-0003 clôturé. Coût unitaire : 0.00 FCFA (rebuts PF : 0, unités bonnes : 400.000).
+[2026-03-27 13:18:50] INFO mepale: Mouvement manuel [Ajustement positif (inventaire)] 5000.000 × Bocal (500g) par Panawe Touh (Administrateur)
+[2026-03-27 13:19:07] INFO mepale: Mouvement manuel [Ajustement positif (inventaire)] 5000.000 × couvercle bocal (500g) par Panawe Touh (Administrateur)
+[2026-03-27 13:19:38] INFO mepale: Mouvement manuel [Ajustement positif (inventaire)] 500000.000 × Tomates fraiches par Panawe Touh (Administrateur)
+[2026-03-27 13:25:11] WARNING mepale: OF OF-2603-0004 : réservation partielle pour Bocal (500g) — 400.0 pcs non couverts (lots disponibles insuffisants ou déjà réservés par d'autres OFs).
+[2026-03-27 13:25:11] WARNING mepale: OF OF-2603-0004 : réservation partielle pour Tomates fraiches — 240.0 kg non couverts (lots disponibles insuffisants ou déjà réservés par d'autres OFs).
+[2026-03-27 13:25:11] WARNING mepale: OF OF-2603-0004 : réservation partielle pour couvercle bocal (500g) — 400.0 pcs non couverts (lots disponibles insuffisants ou déjà réservés par d'autres OFs).
+[2026-03-27 13:25:11] INFO mepale: OF OF-2603-0004 : 0 réservation(s) lot créée(s) (P2-D).
+[2026-03-27 13:25:11] INFO mepale: OF OF-2603-0004 confirmé (snapshot BOM figé : 3 lignes).
+[2026-03-27 13:26:12] INFO mepale: OF OF-2603-0004 démarré.
+[2026-03-27 13:27:04] INFO mepale: OF OF-2603-0004 terminé. Quantité produite: 300.0
+[2026-03-27 13:31:36] WARNING mepale: OF OF-2603-0005 : réservation partielle pour Bocal (500g) — 50.0 pcs non couverts (lots disponibles insuffisants ou déjà réservés par d'autres OFs).
+[2026-03-27 13:31:36] WARNING mepale: OF OF-2603-0005 : réservation partielle pour Tomates fraiches — 30.0 kg non couverts (lots disponibles insuffisants ou déjà réservés par d'autres OFs).
+[2026-03-27 13:31:36] WARNING mepale: OF OF-2603-0005 : réservation partielle pour couvercle bocal (500g) — 50.0 pcs non couverts (lots disponibles insuffisants ou déjà réservés par d'autres OFs).
+[2026-03-27 13:31:36] INFO mepale: OF OF-2603-0005 : 0 réservation(s) lot créée(s) (P2-D).
+[2026-03-27 13:31:36] INFO mepale: OF OF-2603-0005 confirmé (snapshot BOM figé : 3 lignes).
+[2026-03-27 13:31:39] INFO mepale: OF OF-2603-0005 démarré.
+[2026-03-27 13:35:55] INFO mepale: OF OF-2603-0005 terminé. Quantité produite: 53.0
+[2026-03-27 13:38:17] INFO mepale: OF OF-2603-0005 terminé. Quantité produite: 53.0
+[2026-03-27 13:38:54] INFO mepale: Lot PF créé : LOT-20260327-0001
+[2026-03-27 13:38:54] INFO mepale: OF OF-2603-0005 : réservation stock libérée (mode héritage).
+[2026-03-27 13:38:54] INFO mepale: OF OF-2603-0005 — sortie stock MP via snapshot figé.
+[2026-03-27 13:38:54] WARNING mepale: OF OF-2603-0005 : stock insuffisant pour Bocal (500g) — manque 53.0 pcs
+[2026-03-27 13:38:54] WARNING mepale: OF OF-2603-0005 : stock insuffisant pour Tomates fraiches — manque 31.799999999999997 kg
+[2026-03-27 13:38:54] WARNING mepale: OF OF-2603-0005 : stock insuffisant pour couvercle bocal (500g) — manque 53.0 pcs
+[2026-03-27 13:38:54] INFO mepale: Entrée stock : Tomates en boites (500g) × 53.000 (LOT-20260327-0001)
+[2026-03-27 13:38:54] INFO mepale: OF OF-2603-0005 clôturé. Coût unitaire : 0.00 FCFA (rebuts PF : 0, unités bonnes : 53.000).
+[2026-03-27 13:50:10] INFO mepale: OF OF-2603-0006 : réservation sans lot Bocal (500g) — 110.0 pcs
+[2026-03-27 13:50:10] INFO mepale: OF OF-2603-0006 : réservation sans lot Tomates fraiches — 66.0 kg
+[2026-03-27 13:50:10] INFO mepale: OF OF-2603-0006 : réservation sans lot couvercle bocal (500g) — 110.0 pcs
+[2026-03-27 13:50:10] INFO mepale: OF OF-2603-0006 : 0 réservation(s) lot + fallback sans lot traité(s).
+[2026-03-27 13:50:10] INFO mepale: OF OF-2603-0006 confirmé (snapshot BOM figé : 3 lignes).
+[2026-03-27 13:50:40] INFO mepale: OF OF-2603-0006 démarré.
+[2026-03-27 13:51:44] INFO mepale: OF OF-2603-0006 terminé. Quantité produite: 108.0
+[2026-03-27 13:51:53] INFO mepale: Lot PF créé : LOT-20260327-0002
+[2026-03-27 13:51:53] INFO mepale: OF OF-2603-0006 : réservation stock libérée (mode héritage).
+[2026-03-27 13:51:53] INFO mepale: OF OF-2603-0006 — sortie stock MP via snapshot figé.
+[2026-03-27 13:51:53] INFO mepale: OF OF-2603-0006 : consommation sans lot Bocal (500g) — 108.0 pcs
+[2026-03-27 13:51:53] INFO mepale: OF OF-2603-0006 : consommation sans lot Tomates fraiches — 64.8 kg
+[2026-03-27 13:51:53] INFO mepale: OF OF-2603-0006 : consommation sans lot couvercle bocal (500g) — 108.0 pcs
+[2026-03-27 13:51:53] INFO mepale: Entrée stock : Tomates en boites (500g) × 108.000 (LOT-20260327-0002)
+[2026-03-27 13:51:53] INFO mepale: OF OF-2603-0006 clôturé. Coût unitaire : 350.00 FCFA (rebuts PF : 0, unités bonnes : 108.000).
+[2026-03-27 14:08:26] INFO mepale: OF OF-2603-0007 : réservation sans lot Bocal (500g) — 30.0 pcs (stock global)
+[2026-03-27 14:08:26] INFO mepale: OF OF-2603-0007 : réservation sans lot Tomates fraiches — 18.0 kg (stock global)
+[2026-03-27 14:08:26] INFO mepale: OF OF-2603-0007 : réservation sans lot couvercle bocal (500g) — 30.0 pcs (stock global)
+[2026-03-27 14:08:26] INFO mepale: OF OF-2603-0007 : 0 réservation(s) lot + fallback sans lot traité(s).
+[2026-03-27 14:08:26] INFO mepale: OF OF-2603-0007 confirmé (snapshot BOM figé : 3 lignes).
+[2026-03-27 14:08:57] INFO mepale: OF OF-2603-0007 démarré.
+[2026-03-27 14:09:07] INFO mepale: OF OF-2603-0007 terminé. Quantité produite: 35.0
+[2026-03-27 14:09:19] INFO mepale: Lot PF créé : LOT-20260327-0003
+[2026-03-27 14:09:19] INFO mepale: OF OF-2603-0007 : réservation stock libérée (mode héritage).
+[2026-03-27 14:09:19] INFO mepale: OF OF-2603-0007 — sortie stock MP via snapshot figé.
+[2026-03-27 14:09:19] INFO mepale: OF OF-2603-0007 : consommation sans lot Bocal (500g) — 35.0 pcs
+[2026-03-27 14:09:19] INFO mepale: OF OF-2603-0007 : consommation sans lot Tomates fraiches — 21.0 kg
+[2026-03-27 14:09:19] INFO mepale: OF OF-2603-0007 : consommation sans lot couvercle bocal (500g) — 35.0 pcs
+[2026-03-27 14:09:19] INFO mepale: Entrée stock : Tomates en boites (500g) × 35.000 (LOT-20260327-0003)
+[2026-03-27 14:09:19] INFO mepale: OF OF-2603-0007 clôturé. Coût unitaire : 350.00 FCFA (rebuts PF : 0, unités bonnes : 35.000).
+[2026-04-03 12:16:25] INFO mepale: OF OF-2604-0001 : réservation sans lot Bocal (500g) — 24.0 pcs (stock global)
+[2026-04-03 12:16:25] INFO mepale: OF OF-2604-0001 : réservation sans lot Tomates fraiches — 14.399999999999999 kg (stock global)
+[2026-04-03 12:16:25] INFO mepale: OF OF-2604-0001 : réservation sans lot couvercle bocal (500g) — 24.0 pcs (stock global)
+[2026-04-03 12:16:25] INFO mepale: OF OF-2604-0001 : 0 réservation(s) lot + fallback sans lot traité(s).
+[2026-04-03 12:16:25] INFO mepale: OF OF-2604-0001 confirmé (snapshot BOM figé : 3 lignes).
+[2026-04-03 12:16:29] INFO mepale: OF OF-2604-0001 démarré.
+[2026-04-03 12:16:56] INFO mepale: OF OF-2604-0001 terminé. Quantité produite: 26.0
+[2026-04-03 12:17:11] INFO mepale: Lot PF créé : LOT-20260403-0001
+[2026-04-03 12:17:11] INFO mepale: OF OF-2604-0001 : réservation stock libérée (mode héritage).
+[2026-04-03 12:17:11] INFO mepale: OF OF-2604-0001 — sortie stock MP via snapshot figé.
+[2026-04-03 12:17:11] INFO mepale: OF OF-2604-0001 : consommation sans lot Bocal (500g) — 26.0 pcs
+[2026-04-03 12:17:12] INFO mepale: OF OF-2604-0001 : consommation sans lot Tomates fraiches — 15.6 kg
+[2026-04-03 12:17:12] INFO mepale: OF OF-2604-0001 : consommation sans lot couvercle bocal (500g) — 26.0 pcs
+[2026-04-03 12:17:12] INFO mepale: Entrée stock : Tomates en boites (500g) × 26.000 (LOT-20260403-0001)
+[2026-04-03 12:17:12] INFO mepale: OF OF-2604-0001 clôturé. Coût unitaire : 350.00 FCFA (rebuts PF : 0, unités bonnes : 26.000).
+[2026-04-03 12:29:24] INFO mepale: OF OF-2604-0002 : réservation sans lot Bocal (500g) — 35.0 pcs (stock global)
+[2026-04-03 12:29:24] INFO mepale: OF OF-2604-0002 : réservation sans lot Tomates fraiches — 21.0 kg (stock global)
+[2026-04-03 12:29:24] INFO mepale: OF OF-2604-0002 : réservation sans lot couvercle bocal (500g) — 35.0 pcs (stock global)
+[2026-04-03 12:29:24] INFO mepale: OF OF-2604-0002 : 0 réservation(s) lot + fallback sans lot traité(s).
+[2026-04-03 12:29:24] INFO mepale: OF OF-2604-0002 confirmé (snapshot BOM figé : 3 lignes).
+[2026-04-03 12:29:34] INFO mepale: OF OF-2604-0002 démarré.
+[2026-04-03 12:29:40] INFO mepale: OF OF-2604-0002 terminé. Quantité produite: 34.0
+[2026-04-03 12:29:51] INFO mepale: Lot PF créé : LOT-20260403-0002
+[2026-04-03 12:29:51] INFO mepale: OF OF-2604-0002 : réservation stock libérée (mode héritage).
+[2026-04-03 12:29:51] INFO mepale: OF OF-2604-0002 — sortie stock MP via snapshot figé.
+[2026-04-03 12:29:51] INFO mepale: OF OF-2604-0002 : consommation sans lot Bocal (500g) — 34.0 pcs
+[2026-04-03 12:29:51] INFO mepale: OF OF-2604-0002 : consommation sans lot Tomates fraiches — 20.4 kg
+[2026-04-03 12:29:51] INFO mepale: OF OF-2604-0002 : consommation sans lot couvercle bocal (500g) — 34.0 pcs
+[2026-04-03 12:29:51] INFO mepale: Entrée stock : Tomates en boites (500g) × 34.000 (LOT-20260403-0002)
+[2026-04-03 12:29:51] INFO mepale: OF OF-2604-0002 clôturé. Coût unitaire : 350.00 FCFA (rebuts PF : 0, unités bonnes : 34.000).
+[2026-04-03 16:33:28] INFO mepale: BC BC-2604-0001 annulé par Panawe Touh (Administrateur)
+[2026-04-03 16:34:17] INFO mepale: BC BC-2604-0002 envoyé par Panawe Touh (Administrateur)
+[2026-04-03 16:34:30] INFO mepale: BC BC-2604-0002 confirmé par fournisseur — saisi par Panawe Touh (Administrateur)
+[2026-04-03 16:34:54] INFO mepale: BC BC-2604-0002 annulé par Panawe Touh (Administrateur)
+[2026-04-03 16:36:29] INFO mepale: BC BC-2604-0003 envoyé par Panawe Touh (Administrateur)
+[2026-04-03 16:36:31] INFO mepale: BC BC-2604-0003 confirmé par fournisseur — saisi par Panawe Touh (Administrateur)
+[2026-04-03 16:44:06] INFO mepale: Inventaire INV-2604-0001 créé par Panawe Touh (Administrateur) — périmètre : complet — 9 lignes
+[2026-04-03 16:44:20] INFO mepale: Inventaire INV-2604-0001 annulé par Panawe Touh (Administrateur)
+[2026-04-04 09:37:58] INFO mepale: BC BC-2604-0005 envoyé par Panawe Touh (Administrateur)
+[2026-04-04 09:38:24] INFO mepale: BC BC-2604-0005 confirmé par fournisseur — saisi par Panawe Touh (Administrateur)
+[2026-04-04 09:40:22] INFO mepale: BC BC-2604-0006 envoyé par Panawe Touh (Administrateur)
+[2026-04-04 09:56:08] INFO mepale: Entrée stock : Bocal (500g) × 5.000 (LOT-20260404-0001)
+[2026-04-04 09:56:08] INFO mepale: Réception REC-2604-0001 validée (0 NC).
+[2026-04-04 09:58:19] INFO mepale: Entrée stock : couvercle bocal (500g) × 1.000 (LOT-20260404-0002)
+[2026-04-04 09:58:19] INFO mepale: Réception REC-2604-0002 validée (0 NC).
+[2026-04-04 09:58:57] WARNING mepale: LOT NC [LOT-20260404-0003] REC-2604-0003 — article MP-0003 — motif : probleme
+[2026-04-04 09:58:57] WARNING mepale: Réception REC-2604-0003 — 1 ligne(s) NC (fournisseur : soseya).
+[2026-04-04 09:58:57] INFO mepale: Réception REC-2604-0003 validée (1 NC).
+[2026-04-04 10:25:17] INFO mepale: BC BC-2604-0007 envoyé par Panawe Touh (Administrateur)
+[2026-04-04 10:25:47] INFO mepale: Entrée stock : Bocal (500g) × 6.000 (LOT-20260404-0004)
+[2026-04-04 10:25:47] INFO mepale: Réception REC-2604-0004 validée (0 NC).
+[2026-04-04 10:26:27] INFO mepale: BC BC-2604-0008 envoyé par Panawe Touh (Administrateur)
+[2026-04-04 10:26:58] WARNING mepale: LOT NC [LOT-20260404-0005] REC-2604-0005 — article MP-0002 — motif : test002
+[2026-04-04 10:26:58] WARNING mepale: Réception REC-2604-0005 — 1 ligne(s) NC (fournisseur : soseya).
+[2026-04-04 10:26:59] INFO mepale: Réception REC-2604-0005 validée (1 NC).
+[2026-04-04 10:48:06] INFO mepale: Retour RET-2604-0003 : 7.0 × pcs Bocal (500g) (lot LOT-20260404-0005, statut : epuise) retourné à soseya.
+[2026-04-04 10:48:06] INFO mepale: Réception REC-2604-0005 marquée REJETÉE (toutes lignes retournées).
+[2026-04-04 10:48:06] INFO mepale: Retour RET-2604-0003 validé.
+[2026-04-04 14:23:48] INFO mepale: Facture FAC-2604-0003 soumise par Panawe Touh (Administrateur)
+[2026-04-04 14:24:20] INFO mepale: Facture FAC-2604-0003 approuvée par Panawe Touh (Administrateur)
+[2026-04-04 14:24:41] INFO mepale: Facture FAC-2604-0002 soumise par Panawe Touh (Administrateur)
+[2026-04-04 14:24:51] INFO mepale: Facture FAC-2604-0002 approuvée par Panawe Touh (Administrateur)
+[2026-04-04 14:28:21] INFO mepale: Facture FAC-2604-0001 soumise par Panawe Touh (Administrateur)
+[2026-04-04 14:28:23] INFO mepale: Facture FAC-2604-0001 approuvée par Panawe Touh (Administrateur)
+[2026-04-04 14:28:37] INFO mepale: Facture FAC-2604-0001 annulée par Panawe Touh (Administrateur)
+[2026-04-04 23:11:00] INFO mepale: Paiement 50000.00 FCFA sur facture FAC-2604-0003 par Panawe Touh (Administrateur)
+[2026-04-04 23:11:13] INFO mepale: Paiement 17732.00 FCFA sur facture FAC-2604-0003 par Panawe Touh (Administrateur)
+[2026-04-04 23:14:11] INFO mepale: Inventaire INV-2604-0002 créé par Panawe Touh (Administrateur) — périmètre : complet — 9 lignes
+[2026-04-04 23:14:35] INFO mepale: Inventaire INV-2604-0002 annulé par Panawe Touh (Administrateur)
+[2026-04-04 23:26:34] INFO mepale: Inventaire INV-2604-0003 créé par Panawe Touh (Administrateur) — périmètre : articles — 2 lignes
+[2026-04-15 10:01:09] INFO mepale: RETOUR CLIENT RMA-2604-0001 — Remise en stock : 50.000 × Bocal (500g)
+[2026-04-15 10:32:28] INFO mepale: RETOUR CLIENT RMA-2604-0002 — Remise en stock : 35.000 × Bocal (500g)
+[2026-04-17 10:00:41] INFO mepale: BC BC-2604-0006 clôturé manuellement par Panawe Touh (Administrateur). Motif : Reliquat définitivement abandonné
+[2026-04-18 17:54:53] INFO mepale: BC BC-2604-0013 annulé par Panawe Touh (Administrateur)
+[2026-04-20 14:59:17] INFO mepale: OF OF-2604-0003 : réservation sans lot Bocal (500g) — 19.000 pcs (stock global)
+[2026-04-20 14:59:17] INFO mepale: OF OF-2604-0003 : réservation sans lot Tomates fraiches — 18.0 kg (stock global)
+[2026-04-20 14:59:17] INFO mepale: OF OF-2604-0003 : réservation sans lot couvercle bocal (500g) — 29.000 pcs (stock global)
+[2026-04-20 14:59:17] INFO mepale: OF OF-2604-0003 : 3 réservation(s) lot + fallback sans lot traité(s).
+[2026-04-20 14:59:17] INFO mepale: OF OF-2604-0003 confirmé (snapshot BOM figé : 3 lignes).
+[2026-04-20 14:59:19] INFO mepale: OF OF-2604-0003 démarré.
+[2026-04-20 14:59:28] INFO mepale: OF OF-2604-0003 terminé. Quantité produite: 32.0
+[2026-04-20 15:00:04] INFO mepale: Lot PF créé : LOT-20260420-0001
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 : 3 réservation(s) lot libérée(s) (P2-D).
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 : libération sans lot Bocal (500g) — 19.000 pcs
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 : libération sans lot Tomates fraiches — 18.000 kg
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 : libération sans lot couvercle bocal (500g) — 29.000 pcs
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 — sortie stock MP via snapshot figé.
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 : consommation sans lot Bocal (500g) — 21.000 pcs
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 : consommation sans lot Tomates fraiches — 19.2 kg
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 : consommation sans lot couvercle bocal (500g) — 31.000 pcs
+[2026-04-20 15:00:04] INFO mepale: Entrée stock : Tomates en boites (500g) × 32.000 (LOT-20260420-0001)
+[2026-04-20 15:00:04] INFO mepale: OF OF-2604-0003 clôturé. Coût unitaire : 447.97 FCFA (rebuts PF : 0, unités bonnes : 32.000).

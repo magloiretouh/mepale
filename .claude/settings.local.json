@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd.exe /c \"del /F /Q \\\\\"\\\\\\\\\\\\\\\\?\\\\\\\\C:\\\\\\\\Users\\\\\\\\maglo\\\\\\\\Documents\\\\\\\\MANZAY\\\\\\\\MEPALE\\\\\\\\backend\\\\\\\\nul\\\\\"\")"
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+[
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000001",
+    "fields": { "code": "kg",   "libelle": "Kilogramme",  "type": "masse"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000002",
+    "fields": { "code": "g",    "libelle": "Gramme",       "type": "masse"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000003",
+    "fields": { "code": "tonne","libelle": "Tonne",        "type": "masse"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000004",
+    "fields": { "code": "L",    "libelle": "Litre",        "type": "volume"  }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000005",
+    "fields": { "code": "mL",   "libelle": "Millilitre",   "type": "volume"  }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000006",
+    "fields": { "code": "m3",   "libelle": "Mètre cube",   "type": "volume"  }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000007",
+    "fields": { "code": "pcs",  "libelle": "Pièce",        "type": "unite"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000008",
+    "fields": { "code": "sac",  "libelle": "Sac",          "type": "unite"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000009",
+    "fields": { "code": "bidon","libelle": "Bidon",        "type": "unite"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000010",
+    "fields": { "code": "carton","libelle": "Carton",      "type": "unite"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000011",
+    "fields": { "code": "m",    "libelle": "Mètre",        "type": "longueur"}
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000012",
+    "fields": { "code": "m2",   "libelle": "Mètre carré",  "type": "surface" }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000013",
+    "fields": { "code": "h",    "libelle": "Heure",        "type": "unite"   }
+  },
+  {
+    "model": "production.unitemesure",
+    "pk": "10000000-0000-0000-0000-000000000014",
+    "fields": { "code": "j",    "libelle": "Jour",         "type": "unite"   }
+  }
+]

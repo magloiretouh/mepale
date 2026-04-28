@@ -1,0 +1,78 @@
+# ─── Backend Django ───────────────────────────────────────────────────────────
+
+# Environnement virtuel Python
+backend/venv/
+backend/.venv/
+backend/env/
+
+# Bytecode Python
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/**/*$py.class
+*.pyc
+
+# Fichiers Django
+backend/*.log
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/media/
+backend/staticfiles/
+backend/static/
+
+# Variables d'environnement (secrets, clés API)
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# ─── Frontend (React / Vite) ──────────────────────────────────────────────────
+
+# Dépendances
+frontend/node_modules/
+
+# Build
+frontend/dist/
+frontend/dist-ssr/
+frontend/build/
+
+# Cache
+frontend/.vite/
+
+# Variables d'environnement
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Logs
+frontend/logs/
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# ─── Editeurs & OS ────────────────────────────────────────────────────────────
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains (PyCharm, WebStorm…)
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Linux
+*~
+
+# ─── Divers ───────────────────────────────────────────────────────────────────
+
+*.local
+*.suo
+*.sw?
+*.sln

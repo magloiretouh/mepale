@@ -1,0 +1,9 @@
+Analyse la fonctionnalité de [nom de la fonctionnalité, ex: Gestion des Ordres de Processus / Maintenance Préventive].
+Mon application est un ERP dédié à une entreprise de production industrielle.
+Objectifs de l'analyse :
+	1. Audit de la fonctionnalité : Identifie la logique métier actuelle, les entités gérées et les flux de données.
+	2. Analyse comparative (Benchmarking) : Compare cette implémentation avec les standards du marché comme SAP S/4HANA (modules PP-PI/PM) ou Odoo Manufacturing.
+	3. Gap Analysis : Quelles sont les fonctionnalités critiques ou les bonnes pratiques industrielles (ex: traçabilité, gestion des écarts, statuts de contrôle) qui manquent dans mon code actuel ?
+	4. Recommandations : Propose des améliorations concrètes sur la logique metier et fonctionnelle
+
+Examine le code et donne-moi une réponse structurée par priorités.
