@@ -28,10 +28,12 @@ import { ParametresPage }         from '@/pages/administration/ParametresPage'
 import { CategoriesPage }         from '@/pages/administration/CategoriesPage'
 
 // RH
-import { Employes }      from '@/pages/rh/Employes'
-import { EmployeDetail } from '@/pages/rh/EmployeDetail'
-import { CongesPage }    from '@/pages/rh/CongesPage'
-import { PresencesPage } from '@/pages/rh/PresencesPage'
+import { Employes }            from '@/pages/rh/Employes'
+import { EmployeDetail }       from '@/pages/rh/EmployeDetail'
+import { CongesPage }          from '@/pages/rh/CongesPage'
+import { PresencesPage }       from '@/pages/rh/PresencesPage'
+import { PayrollRunPage }      from '@/pages/rh/PayrollRunPage'
+import { BulkSimpleRunPage }   from '@/pages/rh/BulkSimpleRunPage'
 
 // Commercial
 import { ClientList }           from '@/pages/commercial/ClientList'
@@ -157,9 +159,11 @@ export default function App() {
               <Route path="rh">
                 <Route index element={<Navigate to="employes" replace />} />
                 <Route path="employes"      element={<Employes />} />
-                <Route path="employes/:id" element={<EmployeDetail />} />
-                <Route path="conges"       element={<CongesPage />} />
-                <Route path="presences"    element={<PresencesPage />} />
+                <Route path="employes/:id"  element={<EmployeDetail />} />
+                <Route path="paie"          element={<PayrollRunPage />} />
+                <Route path="paie/:type"    element={<BulkSimpleRunPage />} />
+                <Route path="conges"        element={<CongesPage />} />
+                <Route path="presences"     element={<PresencesPage />} />
               </Route>
 
               {/* ── Caisses ── */}

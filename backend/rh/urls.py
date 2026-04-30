@@ -60,6 +60,9 @@ urlpatterns = [
     # ─── Admin — Taux sociaux ─────────────────────────────────────────────────
     path("admin/social-rates/", views.AdminSocialRatesView.as_view()),
 
+    # ─── Brouillon de paie ───────────────────────────────────────────────────
+    path("payroll-draft/", views.PayrollDraftView.as_view()),
+
     # ─── Types de congé ───────────────────────────────────────────────────────
     path("types-conge/",        views.TypeCongeListCreateView.as_view()),
     path("types-conge/<int:pk>/", views.TypeCongeDetailView.as_view()),

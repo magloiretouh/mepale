@@ -74,6 +74,30 @@ export interface SalaryPayment {
   created_at: string
 }
 
+// ── Brouillon de paie ──────────────────────────────────────────────────────
+
+export interface PayrollDraftRow {
+  included: boolean
+  gross:    string
+  advance:  string
+}
+
+export interface PayrollDraftData {
+  rows: Record<string, PayrollDraftRow>
+}
+
+export interface PayrollDraft {
+  id:               number
+  period_month:     string
+  payment_date:     string
+  data:             PayrollDraftData
+  status:           'draft' | 'submitted'
+  updated_by:       string | null
+  updated_by_name:  string | null
+  updated_at:       string
+  created_at:       string
+}
+
 export interface SocialRates {
   cnss_employee_rate: string
   amu_employee_rate: string
@@ -410,4 +434,17 @@ export const rhApi = {
 
   deletePointage: (id: number) =>
     api.delete(`/rh/pointages/${id}/`),
+
+  // ── Brouillon de paie ─────────────────────────────────────────────────────
+  getPayrollDraft: (period_month: string) =>
+    api.get<PayrollDraft>('/rh/payroll-draft/', { params: { period_month }, skipErrorToast: true }),
+
+  savePayrollDraft: (payload: {
+    period_month: string
+    payment_date: string
+    data: PayrollDraftData
+  }) => api.put<PayrollDraft>('/rh/payroll-draft/', payload),
+
+  deletePayrollDraft: (period_month: string) =>
+    api.delete('/rh/payroll-draft/', { params: { period_month } }),
 }

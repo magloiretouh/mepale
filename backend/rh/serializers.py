@@ -9,6 +9,7 @@ from .models import (
     DemandeConge,
     Employee,
     EmployeeCategory,
+    PayrollDraft,
     Pointage,
     PrimeType,
     SalaryPayment,
@@ -175,6 +176,35 @@ class SoldeCongeSerializer(serializers.ModelSerializer):
             "type_conge", "type_conge_name",
             "annee", "jours_acquis", "jours_pris", "jours_restants",
         ]
+
+
+# ── Brouillon de paie ─────────────────────────────────────────────────────────
+
+class PayrollDraftSerializer(serializers.ModelSerializer):
+    updated_by_name = serializers.SerializerMethodField()
+
+    def get_updated_by_name(self, obj):
+        if not obj.updated_by:
+            return None
+        u = obj.updated_by
+        if u.prenom or u.nom:
+            return f"{u.prenom} {u.nom}".strip()
+        return u.username
+
+    class Meta:
+        model = PayrollDraft
+        fields = [
+            "id",
+            "period_month",
+            "payment_date",
+            "data",
+            "status",
+            "updated_by",
+            "updated_by_name",
+            "updated_at",
+            "created_at",
+        ]
+        read_only_fields = ["id", "updated_by", "updated_at", "created_at"]
 
 
 # ── Présences ─────────────────────────────────────────────────────────────────

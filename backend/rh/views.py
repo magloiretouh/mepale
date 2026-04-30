@@ -20,6 +20,7 @@ from .models import (
     DemandeConge,
     Employee,
     EmployeeCategory,
+    PayrollDraft,
     Pointage,
     PrimeType,
     SalaryPayment,
@@ -32,6 +33,7 @@ from .serializers import (
     DemandeCongeSerializer,
     EmployeeCategorySerializer,
     EmployeeSerializer,
+    PayrollDraftSerializer,
     PointageSerializer,
     PrimeTypeSerializer,
     SalaryPaymentSerializer,
@@ -1454,3 +1456,64 @@ class PointageSummaryView(APIView):
             "counts": counts,
             "pointages": PointageSerializer(qs, many=True).data,
         })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BROUILLON DE PAIE
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class PayrollDraftView(APIView):
+    """
+    GET  /rh/payroll-draft/?period_month=YYYY-MM  → brouillon ou 404
+    PUT  /rh/payroll-draft/                       → créer ou mettre à jour
+    DELETE /rh/payroll-draft/?period_month=YYYY-MM → supprimer
+    """
+    permission_classes = [IsRHStaff]
+
+    def get(self, request):
+        period_month = request.query_params.get("period_month")
+        if not period_month:
+            return Response({"detail": "Paramètre period_month requis (YYYY-MM)."}, status=400)
+        try:
+            draft = PayrollDraft.objects.select_related("updated_by").get(
+                period_month=period_month
+            )
+        except PayrollDraft.DoesNotExist:
+            return Response({"detail": "Aucun brouillon pour cette période."}, status=404)
+        return Response(PayrollDraftSerializer(draft).data)
+
+    def put(self, request):
+        period_month = request.data.get("period_month")
+        payment_date = request.data.get("payment_date")
+        data         = request.data.get("data", {})
+
+        if not period_month:
+            return Response({"detail": "period_month requis (YYYY-MM)."}, status=400)
+        if not payment_date:
+            return Response({"detail": "payment_date requis."}, status=400)
+        if not isinstance(data, dict):
+            return Response({"detail": "data doit être un objet JSON."}, status=400)
+
+        draft, created = PayrollDraft.objects.update_or_create(
+            period_month=period_month,
+            defaults={
+                "payment_date": payment_date,
+                "data":         data,
+                "updated_by":   request.user,
+                "status":       PayrollDraft.Status.DRAFT,
+            },
+        )
+        return Response(
+            PayrollDraftSerializer(draft).data,
+            status=201 if created else 200,
+        )
+
+    def delete(self, request):
+        period_month = request.query_params.get("period_month")
+        if not period_month:
+            return Response({"detail": "Paramètre period_month requis."}, status=400)
+        deleted, _ = PayrollDraft.objects.filter(period_month=period_month).delete()
+        if not deleted:
+            return Response({"detail": "Aucun brouillon à supprimer."}, status=404)
+        return Response(status=204)

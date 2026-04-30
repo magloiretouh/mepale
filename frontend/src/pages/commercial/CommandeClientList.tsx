@@ -1,6 +1,6 @@
-﻿/**
+/**
  * MEPALE ERP — Commandes Client
- * Liste + filtres + créer / confirmer / annuler / voir détail
+ * Liste + filtres + créer / créer depuis devis / confirmer / annuler / voir détail
  */
 
 import { useState, useRef } from 'react'
@@ -10,32 +10,23 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   Search, Plus, ClipboardList, Filter, MoreHorizontal, ExternalLink,
-  CheckCircle2, XCircle, AlertTriangle, X, Trash2,
+  CheckCircle2, XCircle, AlertTriangle, FileText, X, Loader2,
 } from 'lucide-react'
 
 import {
   commercialApi,
   type CommandeClientList as CCListType,
-  type CommandeClientCreatePayload,
-  type LigneCCCreatePayload,
+  type DevisList,
   type StatutCC,
+  type StatutDevis,
 } from '@/services/commercial'
-import { productionApi, type Article } from '@/services/production'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { cn, formatDate, formatXOF } from '@/lib/utils'
+import { CCFormModal, type InitialCCData } from './CCFormModal'
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-
-const SELECT_CLASS =
-  'w-full bg-[--bg-elevated] border border-[--border] rounded-lg text-sm text-[--text-primary] ' +
-  'px-3 outline-none transition-all focus:border-[--accent] focus:bg-[--bg-surface] ' +
-  'focus:shadow-[0_0_0_3px_var(--accent-dim)]'
-
-const FIELD_LABEL = 'block text-xs font-medium text-[--text-secondary] uppercase tracking-wider mb-1.5'
-
-// ─── Statut config ────────────────────────────────────────────────────────────
+// ─── Statut config CC ─────────────────────────────────────────────────────────
 
 const STATUT_CFG: Record<StatutCC, { variant: 'neutral' | 'warning' | 'success' | 'danger' | 'info' | 'accent'; label: string }> = {
   brouillon:            { variant: 'neutral', label: 'Brouillon'     },
@@ -46,191 +37,145 @@ const STATUT_CFG: Record<StatutCC, { variant: 'neutral' | 'warning' | 'success' 
   annulee:              { variant: 'danger',  label: 'Annulée'       },
 }
 
-// ─── Types internes ───────────────────────────────────────────────────────────
-
-interface LigneTmp {
-  article:           string
-  quantite_commandee: string
-  prix_unitaire:     string
-  remise_pct:        string
+const STATUT_DEVIS_CFG: Record<StatutDevis, { variant: 'neutral' | 'warning' | 'success' | 'danger' | 'info' | 'accent'; label: string }> = {
+  brouillon: { variant: 'neutral', label: 'Brouillon' },
+  envoye:    { variant: 'accent',  label: 'Envoyé'    },
+  accepte:   { variant: 'success', label: 'Accepté'   },
+  refuse:    { variant: 'danger',  label: 'Refusé'    },
+  expire:    { variant: 'neutral', label: 'Expiré'    },
 }
 
-const EMPTY_LIGNE: LigneTmp = { article: '', quantite_commandee: '1', prix_unitaire: '0', remise_pct: '0' }
+// ─── Modal sélection de devis ─────────────────────────────────────────────────
 
-// ─── Modal Création CC ────────────────────────────────────────────────────────
-
-function CCCreateModal({
+function DevisPickerModal({
   onClose,
-  onSave,
-  isPending,
+  onSelect,
+  isLoading,
 }: {
   onClose:   () => void
-  onSave:    (data: CommandeClientCreatePayload) => void
-  isPending: boolean
+  onSelect:  (devisId: string) => void
+  isLoading: boolean
 }) {
-  const [client, setClient]           = useState('')
-  const [dateLivraison, setDateLiv]   = useState('')
-  const [condPaiement, setCondPay]    = useState('')
-  const [notesClient, setNotes]       = useState('')
-  const [lignes, setLignes]           = useState<LigneTmp[]>([{ ...EMPTY_LIGNE }])
+  const [search, setSearch] = useState('')
 
-  const { data: articles } = useQuery({
-    queryKey: ['articles-select'],
-    queryFn:  () => productionApi.listArticles({ page_size: 200 }).then((r) => r.data.results),
+  const CONVERTIBLE = new Set(['accepte'])
+
+  const { data: devisList } = useQuery({
+    queryKey: ['devis-picker', search],
+    queryFn:  () => commercialApi.listDevis({
+      page_size: 100,
+      search:    search || undefined,
+    }).then((r) => r.data.results.filter((d) => CONVERTIBLE.has(d.statut))),
   })
-
-  const { data: clients } = useQuery({
-    queryKey: ['clients-select'],
-    queryFn:  () => commercialApi.listClients({ page_size: 200, statut: 'actif' }).then((r) => r.data.results),
-  })
-
-  const setLigne = (i: number, field: keyof LigneTmp, val: string) =>
-    setLignes((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: val } : l)))
-
-  const handleArticleChange = (i: number, articleId: string) => {
-    setLigne(i, 'article', articleId)
-    const art = articles?.find((a: Article) => a.id === articleId)
-    if (art?.prix_standard) setLigne(i, 'prix_unitaire', String(art.prix_standard))
-  }
-
-  const handleSubmit = () => {
-    if (!client) { toast.error('Sélectionnez un client'); return }
-    const lignesValides = lignes.filter((l) => l.article && Number(l.quantite_commandee) > 0)
-    if (!lignesValides.length) { toast.error('Ajoutez au moins une ligne'); return }
-    onSave({
-      client,
-      date_livraison_souhaitee: dateLivraison || undefined,
-      conditions_paiement:      condPaiement  || undefined,
-      notes_client:             notesClient   || undefined,
-      lignes: lignesValides.map((l): LigneCCCreatePayload => ({
-        article:           l.article,
-        quantite_commandee: Number(l.quantite_commandee),
-        prix_unitaire:     Number(l.prix_unitaire),
-        remise_pct:        Number(l.remise_pct) || undefined,
-      })),
-    })
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60" onClick={onClose} />
       <div
-        className="relative z-10 w-full max-w-3xl rounded-lg animate-scale-in flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-2xl rounded-lg animate-scale-in flex flex-col overflow-hidden"
         style={{
           backgroundColor: 'var(--bg-surface)',
           border:          '1px solid var(--border)',
           boxShadow:       'var(--shadow-lg)',
-          maxHeight:       '90vh',
+          maxHeight:       '80vh',
         }}
       >
-        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0 border-b" style={{ borderColor: 'var(--border)' }}>
+        {/* En-tête */}
+        <div
+          className="flex items-center justify-between px-5 py-4 flex-shrink-0 border-b"
+          style={{ borderColor: 'var(--border)' }}
+        >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-dim)' }}>
-              <ClipboardList size={15} style={{ color: 'var(--accent)' }} />
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: 'var(--accent-dim)' }}
+            >
+              <FileText size={15} style={{ color: 'var(--accent)' }} />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-[--text-primary]">Nouvelle commande client</h3>
-              <p className="text-xs text-[--text-muted]">Créez une commande</p>
+              <h3 className="text-sm font-semibold text-[--text-primary]">Créer depuis un devis</h3>
+              <p className="text-xs text-[--text-muted]">Sélectionnez un devis à convertir en commande</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-[--text-muted] hover:text-[--text-primary] transition-colors p-1">
+          <button
+            onClick={onClose}
+            className="text-[--text-muted] hover:text-[--text-primary] transition-colors p-1"
+          >
             <X size={15} />
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-5 py-5">
-          <div className="flex flex-col gap-5">
-            <div>
-              <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-3">Informations générales</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className={FIELD_LABEL}>Client <span style={{ color: 'var(--status-danger)' }}>*</span></label>
-                  <select className={SELECT_CLASS} style={{ height: '36px' }} value={client} onChange={(e) => setClient(e.target.value)}>
-                    <option value="">— Sélectionner un client —</option>
-                    {clients?.map((c) => (
-                      <option key={c.id} value={c.id}>{c.code} — {c.raison_sociale}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={FIELD_LABEL}>Livraison souhaitée</label>
-                  <Input type="date" value={dateLivraison} onChange={(e) => setDateLiv(e.target.value)} />
-                </div>
-                <div>
-                  <label className={FIELD_LABEL}>Conditions de paiement</label>
-                  <Input value={condPaiement} onChange={(e) => setCondPay(e.target.value)} placeholder="Ex : 30 jours net" />
-                </div>
-                <div className="col-span-2">
-                  <label className={FIELD_LABEL}>Notes client</label>
-                  <Input value={notesClient} onChange={(e) => setNotes(e.target.value)} placeholder="Instructions particulières…" />
-                </div>
-              </div>
-            </div>
-
-            <div style={{ height: '1px', backgroundColor: 'var(--border-subtle)' }} />
-
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest">Lignes</p>
-                <Button variant="ghost" size="xs" icon={<Plus size={11} />} onClick={() => setLignes((p) => [...p, { ...EMPTY_LIGNE }])}>Ajouter</Button>
-              </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Article', 'Quantité', 'Prix unitaire', 'Remise %', ''].map((h) => (
-                      <th key={h} className="pb-2 text-[10px] font-semibold uppercase tracking-wider text-[--text-muted] text-left px-1">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {lignes.map((l, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td className="py-2 px-1">
-                        <select
-                          className={SELECT_CLASS}
-                          style={{ height: '34px' }}
-                          value={l.article}
-                          onChange={(e) => handleArticleChange(i, e.target.value)}
-                        >
-                          <option value="">— Article —</option>
-                          {articles?.map((a: Article) => (
-                            <option key={a.id} value={a.id}>{a.code} — {a.designation}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="py-2 px-1 w-24">
-                        <Input type="number" min={0} step="0.001" value={l.quantite_commandee}
-                          onChange={(e) => setLigne(i, 'quantite_commandee', e.target.value)} className="font-data" />
-                      </td>
-                      <td className="py-2 px-1 w-32">
-                        <Input type="number" min={0} step="1" value={l.prix_unitaire}
-                          onChange={(e) => setLigne(i, 'prix_unitaire', e.target.value)} className="font-data" />
-                      </td>
-                      <td className="py-2 px-1 w-20">
-                        <Input type="number" min={0} max={100} value={l.remise_pct}
-                          onChange={(e) => setLigne(i, 'remise_pct', e.target.value)} className="font-data" />
-                      </td>
-                      <td className="py-2 px-1 w-8">
-                        {lignes.length > 1 && (
-                          <button
-                            onClick={() => setLignes((p) => p.filter((_, idx) => idx !== i))}
-                            className="p-1 rounded text-[--text-muted] hover:text-[--status-danger] transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        {/* Recherche */}
+        <div className="px-5 py-3 border-b flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
+          <Input
+            placeholder="Référence, client…"
+            icon={<Search size={13} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+          />
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 flex-shrink-0 border-t" style={{ borderColor: 'var(--border)' }}>
+        {/* Liste */}
+        <div className="flex-1 overflow-y-auto">
+          {!devisList ? (
+            <div className="flex items-center justify-center py-12 text-[--text-muted]">
+              <Loader2 size={18} className="animate-spin" />
+            </div>
+          ) : devisList.length === 0 ? (
+            <div className="px-5 py-12 text-center">
+              <FileText size={28} className="mx-auto mb-2 text-[--text-muted]" />
+              <p className="text-sm text-[--text-secondary]">Aucun devis accepté trouvé</p>
+              <p className="text-xs text-[--text-muted] mt-1">Seuls les devis acceptés peuvent être convertis en commande.</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ backgroundColor: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                  {['Référence', 'Client', 'Montant HT', 'Date', 'Statut'].map((h) => (
+                    <th key={h} className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-[--text-muted] text-left">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {devisList.map((d: DevisList) => (
+                  <tr
+                    key={d.id}
+                    className="hover:bg-[--bg-elevated] transition-colors cursor-pointer"
+                    style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                    onClick={() => !isLoading && onSelect(d.id)}
+                  >
+                    <td className="px-5 py-3.5">
+                      <span className="font-data text-xs font-semibold text-[--accent]">{d.reference}</span>
+                      {d.version > 1 && (
+                        <span className="ml-1.5 text-[10px] text-[--text-muted] font-data">v{d.version}</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-xs text-[--text-primary]">{d.client_nom}</span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="font-data text-xs font-semibold">{formatXOF(Number(d.montant_ht))}</span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-xs text-[--text-secondary]">{formatDate(d.date_devis)}</span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <Badge variant={STATUT_DEVIS_CFG[d.statut].variant}>{STATUT_DEVIS_CFG[d.statut].label}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pied */}
+        <div
+          className="flex items-center justify-end px-5 py-3 border-t flex-shrink-0"
+          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
+        >
           <Button variant="ghost" size="sm" onClick={onClose}>Annuler</Button>
-          <Button variant="primary" size="sm" loading={isPending} onClick={handleSubmit}>Créer la commande</Button>
         </div>
       </div>
     </div>
@@ -338,23 +283,20 @@ export function CommandeClientList() {
   const [search, setSearch]       = useState('')
   const [filtre, setFiltre]       = useState<FiltreStatut>('tous')
   const [showModal, setShowModal] = useState(false)
+  const [showDevisPicker, setShowDevisPicker]   = useState(false)
+  const [devisCC, setDevisCC] = useState<{ devisId: string; initialData: InitialCCData } | null>(null)
+  const [fetchingDevis, setFetchingDevis] = useState(false)
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['commandes-client'] })
 
   const params: Record<string, string> = {}
-  if (search)          params.search = search
+  if (search)            params.search = search
   if (filtre !== 'tous') params.statut = filtre
 
   const { data, isLoading } = useQuery({
     queryKey: ['commandes-client', search, filtre],
     queryFn:  () => commercialApi.listCommandesClient(params),
     select:   (r) => r.data,
-  })
-
-  const createMut = useMutation({
-    mutationFn: (data: CommandeClientCreatePayload) => commercialApi.createCommandeClient(data),
-    onSuccess:  () => { toast.success('Commande créée.'); invalidate(); setShowModal(false) },
-    onError:    (e: any) => toast.error(e?.response?.data?.detail ?? 'Erreur'),
   })
 
   const confirmerMut = useMutation({
@@ -376,29 +318,81 @@ export function CommandeClientList() {
     onError:    (e: any) => toast.error(e?.response?.data?.detail ?? 'Erreur'),
   })
 
+  const handleDevisSelected = async (devisId: string) => {
+    setFetchingDevis(true)
+    try {
+      const { data: devis } = await commercialApi.getDevis(devisId)
+      setDevisCC({
+        devisId: devis.id,
+        initialData: {
+          clientId:        devis.client,
+          dateLivraison:   '',
+          condPaiement:    '',
+          notesClient:     devis.notes_client ?? '',
+          notesInternes:   devis.notes_internes ?? '',
+          referenceClient: devis.reference_client ?? '',
+          lignes: devis.lignes.map((l) => ({
+            article:            l.article,
+            quantite_commandee: l.quantite,
+            prix_unitaire:      l.prix_unitaire,
+            remise_pct:         l.remise_pct,
+          })),
+        },
+      })
+      setShowDevisPicker(false)
+    } catch {
+      toast.error('Impossible de charger le devis.')
+    } finally {
+      setFetchingDevis(false)
+    }
+  }
+
   const commandes = data?.results ?? []
 
   return (
     <>
       {showModal && (
-        <CCCreateModal
+        <CCFormModal
           onClose={() => setShowModal(false)}
-          onSave={(d) => createMut.mutate(d)}
-          isPending={createMut.isPending}
+          onSuccess={(id) => { setShowModal(false); navigate(`/commercial/commandes/${id}`) }}
+        />
+      )}
+      {showDevisPicker && (
+        <DevisPickerModal
+          onClose={() => setShowDevisPicker(false)}
+          onSelect={handleDevisSelected}
+          isLoading={fetchingDevis}
+        />
+      )}
+      {devisCC && (
+        <CCFormModal
+          devisId={devisCC.devisId}
+          initialData={devisCC.initialData}
+          onClose={() => setDevisCC(null)}
+          onSuccess={(id) => { setDevisCC(null); navigate(`/commercial/commandes/${id}`) }}
         />
       )}
 
       <div className="space-y-5 animate-fade-in">
 
-        {/* Header standalone */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-[--text-primary]">Commandes client</h1>
             <p className="text-xs text-[--text-muted] mt-0.5">{data?.count ?? 0} commande{(data?.count ?? 0) > 1 ? 's' : ''}</p>
           </div>
-          <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setShowModal(true)}>
-            Nouvelle commande
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary" size="sm"
+              icon={<FileText size={13} />}
+              onClick={() => setShowDevisPicker(true)}
+            >
+              Depuis un devis
+            </Button>
+            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => setShowModal(true)}>
+              Nouvelle commande
+            </Button>
+          </div>
         </div>
 
         {/* Table card */}

@@ -332,7 +332,7 @@ export function EmployeDetail() {
                 icon={<Plus size={13} />}
                 onClick={() => setPayModal(true)}
               >
-                + Paiement
+                Paiement
               </Button>
             </div>
           </div>

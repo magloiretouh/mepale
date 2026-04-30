@@ -1,20 +1,22 @@
-﻿/**
+/**
  * MEPALE ERP — Détail Commande Client
- * Actions : Confirmer (avec vérif stock) / Annuler
+ * Actions : Modifier (brouillon) / Confirmer (avec vérif stock) / Annuler
  */
 
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, ClipboardList, CheckCircle2, XCircle,
-  AlertTriangle, CheckCircle, Calendar, User, FileText, Package,
+  ArrowLeft, ClipboardList, CheckCircle2, XCircle, Pencil,
+  AlertTriangle, CheckCircle, Calendar, User, FileText,
 } from 'lucide-react'
 
 import { commercialApi, type StatutCC } from '@/services/commercial'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { formatDate, formatXOF } from '@/lib/utils'
+import { CCFormModal, type InitialCCData } from './CCFormModal'
 
 // ─── Statut config ────────────────────────────────────────────────────────────
 
@@ -45,6 +47,7 @@ export function CommandeClientDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const [showEditModal, setShowEditModal] = useState(false)
 
   const { data: cc, isLoading } = useQuery({
     queryKey: ['commande-client', id],
@@ -99,176 +102,221 @@ export function CommandeClientDetail() {
   const cfg = STATUT_CFG[cc.statut]
   const totalHT = cc.lignes.reduce((acc, l) => acc + Number(l.montant_ht), 0)
 
+  const editInitialData: InitialCCData = {
+    clientId:        cc.client,
+    dateLivraison:   cc.date_livraison_souhaitee ?? '',
+    condPaiement:    cc.conditions_paiement ?? '',
+    notesClient:     cc.notes_client ?? '',
+    notesInternes:   cc.notes_internes ?? '',
+    referenceClient: cc.reference_client ?? '',
+    lignes: cc.lignes.map((l) => ({
+      article:            l.article,
+      quantite_commandee: l.quantite_commandee,
+      prix_unitaire:      l.prix_unitaire,
+      remise_pct:         l.remise_pct,
+    })),
+  }
+
   return (
-    <div className="animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between px-6 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/commercial/commandes')}
-            className="p-1.5 rounded-lg text-[--text-muted] hover:text-[--text-primary] hover:bg-[--bg-elevated] transition-all"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: 'var(--accent-dim)' }}
-          >
-            <ClipboardList size={18} style={{ color: 'var(--accent)' }} />
+    <>
+      {showEditModal && (
+        <CCFormModal
+          commandeId={cc.id}
+          initialData={editInitialData}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => setShowEditModal(false)}
+        />
+      )}
+
+      <div className="animate-fade-in">
+        {/* Header */}
+        <div className="flex items-start justify-between px-6 py-5 border-b" style={{ borderColor: 'var(--border)' }}>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/commercial/commandes')}
+              className="p-1.5 rounded-lg text-[--text-muted] hover:text-[--text-primary] hover:bg-[--bg-elevated] transition-all"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: 'var(--accent-dim)' }}
+            >
+              <ClipboardList size={18} style={{ color: 'var(--accent)' }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold text-[--text-primary] font-data">{cc.reference}</h1>
+                <Badge variant={cfg.variant}>{cfg.label}</Badge>
+                {cc.stock_warning && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{ backgroundColor: 'var(--status-warning-bg)', color: 'var(--status-warning)' }}
+                  >
+                    <AlertTriangle size={10} /> Alerte stock
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[--text-muted] mt-0.5">{cc.client_nom}</p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-[--text-primary] font-data">{cc.reference}</h1>
-              <Badge variant={cfg.variant}>{cfg.label}</Badge>
-              {cc.stock_warning && (
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={{ backgroundColor: 'var(--status-warning-bg)', color: 'var(--status-warning)' }}
-                >
-                  <AlertTriangle size={10} /> Alerte stock
-                </span>
+          <div className="flex items-center gap-2">
+            {cc.statut === 'brouillon' && (
+              <Button
+                variant="secondary" size="sm"
+                icon={<Pencil size={13} />}
+                onClick={() => setShowEditModal(true)}
+              >
+                Modifier
+              </Button>
+            )}
+            {cc.statut === 'brouillon' && (
+              <Button
+                variant="primary" size="sm"
+                icon={<CheckCircle2 size={13} />}
+                loading={confirmerMut.isPending}
+                onClick={() => confirmerMut.mutate()}
+              >
+                Confirmer
+              </Button>
+            )}
+            {!['livree', 'annulee'].includes(cc.statut) && (
+              <Button
+                variant="danger" size="sm"
+                icon={<XCircle size={13} />}
+                loading={annulerMut.isPending}
+                onClick={() => annulerMut.mutate()}
+              >
+                Annuler
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Contenu */}
+        <div className="px-6 py-5 grid grid-cols-3 gap-5">
+          {/* Infos */}
+          <div className="col-span-1 space-y-5">
+            <div className="surface rounded-xl p-5">
+              <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-3">Informations</p>
+              <InfoRow icon={<User size={13} />}     label="Client"             value={cc.client_nom} />
+              <InfoRow icon={<User size={13} />}     label="Commercial"         value={cc.commercial_nom ?? '—'} />
+              <InfoRow icon={<Calendar size={13} />} label="Date commande"      value={formatDate(cc.date_commande)} />
+              <InfoRow icon={<Calendar size={13} />} label="Livr. souhaitée"    value={cc.date_livraison_souhaitee ? formatDate(cc.date_livraison_souhaitee) : '—'} />
+              <InfoRow icon={<Calendar size={13} />} label="Livr. confirmée"    value={cc.date_livraison_confirmee ? formatDate(cc.date_livraison_confirmee) : '—'} />
+              {cc.devis_reference && (
+                <InfoRow
+                  icon={<FileText size={13} />}
+                  label="Devis origine"
+                  value={
+                    <button
+                      className="font-data text-xs text-[--accent] hover:underline"
+                      onClick={() => navigate(`/commercial/devis/${cc.devis}`)}
+                    >
+                      {cc.devis_reference}
+                    </button>
+                  }
+                />
+              )}
+              {cc.reference_client && (
+                <InfoRow icon={<FileText size={13} />} label="Réf. client" value={cc.reference_client} />
               )}
             </div>
-            <p className="text-xs text-[--text-muted] mt-0.5">{cc.client_nom}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {cc.statut === 'brouillon' && (
-            <Button
-              variant="primary" size="sm"
-              icon={<CheckCircle2 size={13} />}
-              loading={confirmerMut.isPending}
-              onClick={() => confirmerMut.mutate()}
-            >
-              Confirmer
-            </Button>
-          )}
-          {!['livree', 'annulee'].includes(cc.statut) && (
-            <Button
-              variant="danger" size="sm"
-              icon={<XCircle size={13} />}
-              loading={annulerMut.isPending}
-              onClick={() => annulerMut.mutate()}
-            >
-              Annuler
-            </Button>
-          )}
-        </div>
-      </div>
 
-      {/* Contenu */}
-      <div className="px-6 py-5 grid grid-cols-3 gap-5">
-        {/* Infos */}
-        <div className="col-span-1 space-y-5">
-          <div className="surface rounded-xl p-5">
-            <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-3">Informations</p>
-            <InfoRow icon={<User size={13} />}     label="Client"             value={cc.client_nom} />
-            <InfoRow icon={<User size={13} />}     label="Commercial"         value={cc.commercial_nom ?? '—'} />
-            <InfoRow icon={<Calendar size={13} />} label="Date commande"      value={formatDate(cc.date_commande)} />
-            <InfoRow icon={<Calendar size={13} />} label="Livr. souhaitée"    value={cc.date_livraison_souhaitee ? formatDate(cc.date_livraison_souhaitee) : '—'} />
-            <InfoRow icon={<Calendar size={13} />} label="Livr. confirmée"    value={cc.date_livraison_confirmee ? formatDate(cc.date_livraison_confirmee) : '—'} />
-            {cc.devis_reference && (
-              <InfoRow
-                icon={<FileText size={13} />}
-                label="Devis origine"
-                value={
-                  <button
-                    className="font-data text-xs text-[--accent] hover:underline"
-                    onClick={() => navigate(`/commercial/devis/${cc.devis}`)}
-                  >
-                    {cc.devis_reference}
-                  </button>
-                }
-              />
+            {cc.conditions_paiement && (
+              <div className="surface rounded-xl p-5">
+                <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-2">Conditions paiement</p>
+                <p className="text-xs text-[--text-secondary]">{cc.conditions_paiement}</p>
+              </div>
+            )}
+
+            {cc.notes_client && (
+              <div className="surface rounded-xl p-5">
+                <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-2">Notes client</p>
+                <p className="text-xs text-[--text-secondary] whitespace-pre-wrap leading-relaxed">{cc.notes_client}</p>
+              </div>
+            )}
+
+            {cc.notes_internes && (
+              <div className="surface rounded-xl p-5">
+                <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-2">Notes internes</p>
+                <p className="text-xs text-[--text-secondary] whitespace-pre-wrap leading-relaxed">{cc.notes_internes}</p>
+              </div>
             )}
           </div>
 
-          {cc.conditions_paiement && (
-            <div className="surface rounded-xl p-5">
-              <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-2">Conditions paiement</p>
-              <p className="text-xs text-[--text-secondary]">{cc.conditions_paiement}</p>
-            </div>
-          )}
-
-          {cc.notes_client && (
-            <div className="surface rounded-xl p-5">
-              <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest mb-2">Notes client</p>
-              <p className="text-xs text-[--text-secondary] whitespace-pre-wrap leading-relaxed">{cc.notes_client}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Lignes */}
-        <div className="col-span-2">
-          <div className="surface rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest">Lignes</p>
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '2px solid var(--border)' }}>
-                  {['Article', 'Désignation', 'Commandée', 'Livrée', 'Restante', 'P.U.', 'Montant HT', 'Stock confir.'].map((h) => (
-                    <th key={h} className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[--text-muted] text-left">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {cc.lignes.map((l, i) => (
-                  <tr key={l.id} style={{ borderBottom: i < cc.lignes.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
-                    <td className="px-3 py-3">
-                      <span className="font-data text-xs text-[--accent]">{l.article_code}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="text-xs text-[--text-primary]">{l.article_designation}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="font-data text-xs">{l.quantite_commandee} {l.unite_code}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="font-data text-xs text-[--status-success]">{l.quantite_livree} {l.unite_code}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className="font-data text-xs"
-                        style={{ color: Number(l.quantite_restante) > 0 ? 'var(--status-warning)' : 'var(--text-muted)' }}
-                      >
-                        {l.quantite_restante} {l.unite_code}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="font-data text-xs">{formatXOF(Number(l.prix_unitaire))}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="font-data text-xs font-semibold">{formatXOF(Number(l.montant_ht))}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      {l.stock_disponible_confirmation !== null ? (
-                        <div className="flex items-center gap-2">
-                          {Number(l.stock_disponible_confirmation) >= Number(l.quantite_commandee) ? (
-                            <CheckCircle size={12} style={{ color: 'var(--status-success)' }} />
-                          ) : (
-                            <AlertTriangle size={12} style={{ color: 'var(--status-warning)' }} />
-                          )}
-                          <span className="font-data text-xs text-[--text-muted]">{l.stock_disponible_confirmation}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-[--text-muted]">—</span>
-                      )}
-                    </td>
+          {/* Lignes */}
+          <div className="col-span-2">
+            <div className="surface rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-[10px] font-bold text-[--text-muted] uppercase tracking-widest">Lignes</p>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--bg-surface)', borderBottom: '2px solid var(--border)' }}>
+                    {['Article', 'Désignation', 'Commandée', 'Livrée', 'Restante', 'P.U.', 'Montant HT', 'Stock confir.'].map((h) => (
+                      <th key={h} className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[--text-muted] text-left">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <div
-              className="flex items-center justify-end gap-6 px-6 py-4 border-t"
-              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
-            >
-              <span className="text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Total HT</span>
-              <span className="font-data text-base font-bold text-[--text-primary]">{formatXOF(totalHT)}</span>
+                </thead>
+                <tbody>
+                  {cc.lignes.map((l, i) => (
+                    <tr key={l.id} style={{ borderBottom: i < cc.lignes.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                      <td className="px-3 py-3">
+                        <span className="font-data text-xs text-[--accent]">{l.article_code}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="text-xs text-[--text-primary]">{l.article_designation}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-data text-xs">{l.quantite_commandee} {l.unite_code}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-data text-xs text-[--status-success]">{l.quantite_livree} {l.unite_code}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="font-data text-xs"
+                          style={{ color: Number(l.quantite_restante) > 0 ? 'var(--status-warning)' : 'var(--text-muted)' }}
+                        >
+                          {l.quantite_restante} {l.unite_code}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-data text-xs">{formatXOF(Number(l.prix_unitaire))}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="font-data text-xs font-semibold">{formatXOF(Number(l.montant_ht))}</span>
+                      </td>
+                      <td className="px-3 py-3">
+                        {l.stock_disponible_confirmation !== null ? (
+                          <div className="flex items-center gap-2">
+                            {Number(l.stock_disponible_confirmation) >= Number(l.quantite_commandee) ? (
+                              <CheckCircle size={12} style={{ color: 'var(--status-success)' }} />
+                            ) : (
+                              <AlertTriangle size={12} style={{ color: 'var(--status-warning)' }} />
+                            )}
+                            <span className="font-data text-xs text-[--text-muted]">{l.stock_disponible_confirmation}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[--text-muted]">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div
+                className="flex items-center justify-end gap-6 px-6 py-4 border-t"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
+              >
+                <span className="text-xs font-semibold text-[--text-secondary] uppercase tracking-wider">Total HT</span>
+                <span className="font-data text-base font-bold text-[--text-primary]">{formatXOF(totalHT)}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

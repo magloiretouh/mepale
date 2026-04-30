@@ -361,12 +361,21 @@ class CommandeClientViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return CommandeClientListSerializer
-        if self.action == 'create':
+        if self.action in ('create', 'update', 'partial_update'):
             return CommandeClientCreateSerializer
         return CommandeClientSerializer
 
     def perform_create(self, serializer):
         serializer.save(cree_par=self.request.user)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.statut != CommandeClient.Statut.BROUILLON:
+            return Response(
+                {'detail': "Seule une commande en brouillon peut être modifiée."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().partial_update(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], url_path='confirmer')
     def confirmer(self, request, pk=None):

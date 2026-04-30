@@ -265,9 +265,7 @@ function CategoriesSection({
     queryFn:  () => caissesApi.listCategories({ page_size: 200 }).then(r => r.data),
   })
 
-  const categories: CategorieMouvement[] = data?.results ?? []
-  const entrees = categories.filter(c => c.type === 'entree')
-  const sorties = categories.filter(c => c.type === 'sortie')
+  const categories: CategorieMouvement[] = (data?.results ?? []).slice().sort((a, b) => a.ordre - b.ordre)
 
   return (
     <div className="surface overflow-hidden">
@@ -278,127 +276,122 @@ function CategoriesSection({
       >
         <h2 className="text-sm font-semibold text-[--text-primary]">
           Catégories de mouvements
+          {!isLoading && (
+            <span className="ml-2 text-xs font-normal text-[--text-muted]">
+              ({categories.length})
+            </span>
+          )}
         </h2>
-        <Button
-          variant="outline"
-          size="sm"
-          icon={<Plus size={12} />}
-          onClick={onCreate}
-        >
+        <Button variant="outline" size="sm" icon={<Plus size={12} />} onClick={onCreate}>
           Nouvelle catégorie
         </Button>
       </div>
 
       {isLoading ? (
         <div className="p-8 text-center text-sm text-[--text-muted]">Chargement…</div>
+      ) : categories.length === 0 ? (
+        <div className="p-8 text-center text-sm text-[--text-muted]">Aucune catégorie.</div>
       ) : (
-        <div className="grid grid-cols-2 divide-x" style={{ borderColor: 'var(--border)' }}>
-
-          {/* Entrées */}
-          <CategoryGroup
-            label="Entrées"
-            icon={<ArrowDownLeft size={13} style={{ color: 'var(--status-success)' }} />}
-            categories={entrees}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-
-          {/* Sorties */}
-          <CategoryGroup
-            label="Sorties"
-            icon={<ArrowUpRight size={13} style={{ color: 'var(--status-danger)' }} />}
-            categories={sorties}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CategoryGroup({
-  label,
-  icon,
-  categories,
-  onEdit,
-  onDelete,
-}: {
-  label:      string
-  icon:       React.ReactNode
-  categories: CategorieMouvement[]
-  onEdit:     (cat: CategorieMouvement) => void
-  onDelete:   (cat: CategorieMouvement) => void
-}) {
-  return (
-    <div>
-      {/* Sub-header */}
-      <div
-        className="flex items-center gap-2 px-4 py-2.5"
-        style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}
-      >
-        {icon}
-        <span className="text-xs font-medium text-[--text-secondary] uppercase tracking-wider">
-          {label}
-        </span>
-        <span className="ml-auto text-xs text-[--text-muted]">{categories.length}</span>
-      </div>
-
-      {/* Liste */}
-      {categories.length === 0 ? (
-        <div className="px-4 py-6 text-center text-sm text-[--text-muted]">
-          Aucune catégorie
-        </div>
-      ) : (
-        <div>
-          {categories
-            .sort((a, b) => a.ordre - b.ordre)
-            .map((cat, i) => (
-              <div
-                key={cat.id}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-[--bg-elevated] transition-colors group"
-                style={{
-                  borderBottom: i < categories.length - 1 ? '1px solid var(--border-subtle)' : undefined,
-                }}
-              >
-                {/* Icône verrou si system */}
-                {cat.is_system && (
-                  <Lock size={11} className="text-[--text-muted] flex-shrink-0" />
-                )}
-
-                {/* Nom + code */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[--text-primary] truncate">{cat.nom}</p>
-                  <p className="text-xs font-data text-[--text-muted]">{cat.code}</p>
-                </div>
-
-                {/* Statut */}
-                {!cat.actif && (
-                  <Badge variant="neutral" className="flex-shrink-0">Inactif</Badge>
-                )}
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button
-                    className="p-1.5 rounded hover:bg-[--bg-elevated] text-[--text-muted] hover:text-[--text-primary] transition-colors"
-                    onClick={() => onEdit(cat)}
-                    title="Modifier"
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ backgroundColor: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                {[
+                  { l: 'Nom',    a: 'left'  },
+                  { l: 'Code',   a: 'left'  },
+                  { l: 'Type',   a: 'left'  },
+                  { l: 'Ordre',  a: 'right' },
+                  { l: 'Statut', a: 'left'  },
+                  { l: '',       a: 'right' },
+                ].map((col, i) => (
+                  <th
+                    key={i}
+                    className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
+                    style={{ textAlign: col.a as 'left' | 'right', color: 'var(--text-secondary)' }}
                   >
-                    <Pencil size={12} />
-                  </button>
-                  {!cat.is_system && (
-                    <button
-                      className="p-1.5 rounded hover:bg-[--bg-elevated] transition-colors"
-                      style={{ color: 'var(--status-danger)' }}
-                      onClick={() => onDelete(cat)}
-                      title="Supprimer"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+                    {col.l}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((cat, i) => (
+                <tr
+                  key={cat.id}
+                  className="group transition-colors hover:bg-[--bg-elevated]"
+                  style={{
+                    backgroundColor: i % 2 === 1 ? 'var(--bg-elevated)' : 'transparent',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                >
+                  {/* Nom */}
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      {cat.is_system && (
+                        <Lock size={11} className="flex-shrink-0 text-[--text-muted]" />
+                      )}
+                      <span className="font-medium text-[--text-primary]">{cat.nom}</span>
+                    </div>
+                  </td>
+
+                  {/* Code */}
+                  <td className="px-4 py-2.5">
+                    <span className="font-data text-xs text-[--text-muted]">{cat.code}</span>
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-4 py-2.5">
+                    {cat.type === 'entree' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded"
+                        style={{ color: 'var(--status-success)', backgroundColor: 'var(--status-success-bg)' }}>
+                        <ArrowDownLeft size={11} /> Entrée
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded"
+                        style={{ color: 'var(--status-danger)', backgroundColor: 'var(--status-danger-bg)' }}>
+                        <ArrowUpRight size={11} /> Sortie
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Ordre */}
+                  <td className="px-4 py-2.5 text-right">
+                    <span className="font-data text-xs text-[--text-muted]">{cat.ordre}</span>
+                  </td>
+
+                  {/* Statut */}
+                  <td className="px-4 py-2.5">
+                    <Badge variant={cat.actif ? 'success' : 'neutral'}>
+                      {cat.actif ? 'Actif' : 'Inactif'}
+                    </Badge>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        className="p-1.5 rounded text-[--text-muted] hover:text-[--text-primary] hover:bg-[--bg-elevated] transition-colors"
+                        onClick={() => onEdit(cat)}
+                        title="Modifier"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                      {!cat.is_system && (
+                        <button
+                          className="p-1.5 rounded hover:bg-[--bg-elevated] transition-colors"
+                          style={{ color: 'var(--status-danger)' }}
+                          onClick={() => onDelete(cat)}
+                          title="Supprimer"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

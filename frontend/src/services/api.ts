@@ -4,6 +4,14 @@
  */
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+
+// Permet de passer skipErrorToast: true dans les configs de requête
+// pour supprimer le toast automatique sur certains endpoints (ex: 404 brouillon)
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    skipErrorToast?: boolean
+  }
+}
 import { toast } from 'sonner'
 
 const BASE_URL = '/api/v1'
@@ -106,8 +114,8 @@ api.interceptors.response.use(
       }
     }
 
-    // Erreurs métier → toast automatique (sauf 401 qui est géré ci-dessus)
-    if (error.response?.status !== 401) {
+    // Erreurs métier → toast automatique (sauf 401 et requêtes avec skipErrorToast)
+    if (error.response?.status !== 401 && !error.config?.skipErrorToast) {
       const data = error.response?.data as Record<string, unknown> | undefined
       const message = extractDRFError(data)
       toast.error(message)

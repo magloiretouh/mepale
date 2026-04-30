@@ -16,10 +16,10 @@ import { cn } from '@/lib/utils'
 import { Button }  from '@/components/ui/Button'
 import { Input }   from '@/components/ui/Input'
 import { Badge }   from '@/components/ui/Badge'
-import { EmployeModal }     from './EmployeModal'
-import { PaymentModal }     from './PaymentModal'
-import { BulkPaymentModal } from './BulkPaymentModal'
-import { CnssModal }        from './CnssModal'
+import { EmployeModal }          from './EmployeModal'
+import { PaymentModal }          from './PaymentModal'
+import { BulkTypeChoiceModal }   from './BulkTypeChoiceModal'
+import { CnssModal }             from './CnssModal'
 import { type Employee, type SalaryPayment, rhApi } from '@/services/rh'
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -270,23 +270,19 @@ export function Employes() {
       />
 
       {socialRates && (
-        <>
-          <PaymentModal
-            isOpen={payModal}
-            onClose={() => setPayModal(false)}
-            employees={employees}
-            socialRates={socialRates}
-            onSuccess={() => {}}
-          />
-          <BulkPaymentModal
-            isOpen={bulkModal}
-            onClose={() => setBulkModal(false)}
-            employees={employees}
-            socialRates={socialRates}
-            onSuccess={() => {}}
-          />
-        </>
+        <PaymentModal
+          isOpen={payModal}
+          onClose={() => setPayModal(false)}
+          employees={employees}
+          socialRates={socialRates}
+          onSuccess={() => {}}
+        />
       )}
+
+      <BulkTypeChoiceModal
+        isOpen={bulkModal}
+        onClose={() => setBulkModal(false)}
+      />
 
       <CnssModal
         isOpen={cnssModal}

@@ -326,6 +326,24 @@ class CommandeClientCreateSerializer(serializers.ModelSerializer):
             cc.recalculer_montant()
         return cc
 
+    def update(self, instance, validated_data):
+        from django.db import transaction as db_transaction
+        if instance.statut != CommandeClient.Statut.BROUILLON:
+            raise serializers.ValidationError(
+                'Seule une commande en brouillon peut être modifiée.'
+            )
+        lignes_data = validated_data.pop('lignes', None)
+        with db_transaction.atomic():
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+            if lignes_data is not None:
+                instance.lignes.all().delete()
+                for ld in lignes_data:
+                    LigneCommandeClient.objects.create(commande=instance, **ld)
+                instance.recalculer_montant()
+        return instance
+
 
 # ---------------------------------------------------------------------------
 # Bon de Livraison

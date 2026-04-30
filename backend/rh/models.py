@@ -300,6 +300,58 @@ class SocialRates(models.Model):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# BROUILLON DE PAIE
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class PayrollDraft(models.Model):
+    """
+    Brouillon de traitement de paie mensuel.
+    Un seul brouillon par période (period_month unique).
+    Permet la collaboration : plusieurs utilisateurs peuvent modifier
+    le même brouillon avant de lancer la paie définitive.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT     = "draft",     "Brouillon"
+        SUBMITTED = "submitted", "Soumis"
+
+    period_month = models.CharField(
+        max_length=7,
+        unique=True,
+        verbose_name="Période (YYYY-MM)",
+    )
+    payment_date = models.DateField(verbose_name="Date de paiement prévue")
+    # Structure JSON : {"rows": {"<employee_id>": {"included": bool, "gross": "str", "advance": "str"}}}
+    data = models.JSONField(default=dict, verbose_name="Données de la grille")
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        verbose_name="Statut",
+    )
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="Dernière modification par",
+    )
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Dernière modification")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Créé le")
+
+    class Meta:
+        db_table = "payroll_drafts"
+        verbose_name = "Brouillon de paie"
+        verbose_name_plural = "Brouillons de paie"
+        ordering = ["-period_month"]
+
+    def __str__(self):
+        return f"Brouillon paie {self.period_month} ({self.get_status_display()})"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # CONGÉS & ABSENCES
 # ══════════════════════════════════════════════════════════════════════════════
 

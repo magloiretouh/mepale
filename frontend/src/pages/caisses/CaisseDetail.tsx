@@ -16,7 +16,7 @@ import { Button }  from '@/components/ui/Button'
 import { Input }   from '@/components/ui/Input'
 import { Modal }   from '@/components/ui/Modal'
 import { Badge }   from '@/components/ui/Badge'
-import { caissesApi, type MouvementCaisseList, type CategorieMouvement } from '@/services/caisses'
+import { caissesApi, type MouvementCaisseList } from '@/services/caisses'
 import { formatXOF, formatDate } from '@/lib/utils'
 
 const SELECT_CLASS =
@@ -125,11 +125,11 @@ export function CaisseDetail() {
         isOpen={showFermer}
         onClose={() => setShowFermer(false)}
         title="Fermer la session"
-        size="sm"
+        size="lg"
       >
         <FermerSessionForm
           caisseId={id!}
-          soldeTh={caisse.solde_actuel}
+          sessionId={sessionOuverte?.id ?? ''}
           onCancel={() => setShowFermer(false)}
           onSuccess={() => {
             setShowFermer(false)
@@ -489,10 +489,47 @@ function OuvrirSessionForm({
 // ─── Formulaire fermeture de session ─────────────────────────────────────────
 
 function FermerSessionForm({
-  caisseId, soldeTh, onCancel, onSuccess,
-}: { caisseId: string; soldeTh: number; onCancel: () => void; onSuccess: () => void }) {
+  caisseId, sessionId, onCancel, onSuccess,
+}: { caisseId: string; sessionId: string; onCancel: () => void; onSuccess: () => void }) {
   const [soldeReel, setSoldeReel] = useState('')
   const [notes,     setNotes]     = useState('')
+
+  // Session courante → solde_ouverture + solde_fermeture_theorique
+  const { data: session, isLoading: sessionLoading } = useQuery({
+    queryKey: ['caisses', caisseId, 'session-courante'],
+    queryFn:  () => caissesApi.sessionCourante(caisseId).then(r => r.data),
+    enabled:  !!caisseId,
+  })
+
+  // Mouvements de la session (tous, on filtre côté front)
+  const { data: mvtData, isLoading: mvtLoading } = useQuery({
+    queryKey: ['caisses', caisseId, 'mouvements-session', sessionId],
+    queryFn:  () => caissesApi.listMouvements({ caisse: caisseId, page_size: 500 }).then(r => r.data),
+    enabled:  !!caisseId && !!sessionId,
+  })
+
+  // Mouvements approuvés de la session courante, groupés par catégorie
+  const mvtApprouves = (mvtData?.results ?? []).filter(
+    m => m.statut === 'approuve' && m.session === sessionId,
+  )
+
+  const byCategory = (type: 'entree' | 'sortie') => {
+    const map = new Map<string, { nom: string; total: number }>()
+    for (const m of mvtApprouves.filter(m => m.type === type)) {
+      const key = m.categorie_detail.nom
+      const cur = map.get(key) ?? { nom: key, total: 0 }
+      map.set(key, { ...cur, total: cur.total + m.montant })
+    }
+    return [...map.values()].sort((a, b) => a.nom.localeCompare(b.nom))
+  }
+
+  const entrees        = byCategory('entree')
+  const sorties        = byCategory('sortie')
+  const totalEntrees   = entrees.reduce((s, r) => s + r.total, 0)
+  const totalSorties   = sorties.reduce((s, r) => s + r.total, 0)
+  const soldeOuverture = session?.solde_ouverture ?? 0
+  const soldeTh        = session?.solde_fermeture_theorique ?? (soldeOuverture + totalEntrees - totalSorties)
+  const ecart          = soldeReel ? Number(soldeReel) - soldeTh : null
 
   const mut = useMutation({
     mutationFn: () => caissesApi.fermerSession(caisseId, {
@@ -502,18 +539,108 @@ function FermerSessionForm({
     onSuccess: () => { toast.success('Session fermée.'); onSuccess() },
   })
 
-  const ecart = soldeReel ? Number(soldeReel) - soldeTh : null
+  const isLoading = sessionLoading || mvtLoading
 
   return (
     <div className="flex flex-col gap-5">
-      <div
-        className="p-3 rounded-lg text-sm"
-        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-      >
-        <span className="text-[--text-muted]">Solde théorique : </span>
-        <span className="font-data font-medium text-[--text-primary]">{formatXOF(soldeTh)}</span>
+
+      {/* ── Récapitulatif par rubrique ── */}
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+
+        {/* En-tête */}
+        <div className="px-4 py-2.5" style={{ backgroundColor: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+            Récapitulatif de la session
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>Chargement…</div>
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+
+            {/* Solde d'ouverture */}
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Solde d'ouverture</span>
+              <span className="font-data text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {formatXOF(soldeOuverture)}
+              </span>
+            </div>
+
+            {/* Entrées */}
+            {entrees.length > 0 && (
+              <>
+                <div className="px-4 py-1.5" style={{ backgroundColor: 'color-mix(in srgb, var(--status-success) 5%, transparent)' }}>
+                  <div className="flex items-center gap-1.5">
+                    <ArrowDownLeft size={11} style={{ color: 'var(--status-success)' }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--status-success)' }}>
+                      Entrées
+                    </span>
+                  </div>
+                </div>
+                {entrees.map(r => (
+                  <div key={r.nom} className="flex items-center justify-between px-4 py-2" style={{ paddingLeft: '2rem' }}>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{r.nom}</span>
+                    <span className="font-data text-sm" style={{ color: 'var(--status-success)' }}>
+                      +{formatXOF(r.total)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: 'color-mix(in srgb, var(--status-success) 5%, transparent)' }}>
+                  <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Total entrées</span>
+                  <span className="font-data text-sm font-semibold" style={{ color: 'var(--status-success)' }}>
+                    +{formatXOF(totalEntrees)}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {/* Sorties */}
+            {sorties.length > 0 && (
+              <>
+                <div className="px-4 py-1.5" style={{ backgroundColor: 'color-mix(in srgb, var(--status-danger) 5%, transparent)' }}>
+                  <div className="flex items-center gap-1.5">
+                    <ArrowUpRight size={11} style={{ color: 'var(--status-danger)' }} />
+                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--status-danger)' }}>
+                      Sorties
+                    </span>
+                  </div>
+                </div>
+                {sorties.map(r => (
+                  <div key={r.nom} className="flex items-center justify-between px-4 py-2" style={{ paddingLeft: '2rem' }}>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{r.nom}</span>
+                    <span className="font-data text-sm" style={{ color: 'var(--status-danger)' }}>
+                      −{formatXOF(r.total)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: 'color-mix(in srgb, var(--status-danger) 5%, transparent)' }}>
+                  <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Total sorties</span>
+                  <span className="font-data text-sm font-semibold" style={{ color: 'var(--status-danger)' }}>
+                    −{formatXOF(totalSorties)}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {/* Solde théorique */}
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ backgroundColor: 'var(--bg-elevated)' }}
+            >
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                Solde théorique
+              </span>
+              <span className="font-data text-base font-bold" style={{ color: 'var(--accent)' }}>
+                {formatXOF(soldeTh)}
+              </span>
+            </div>
+
+          </div>
+        )}
       </div>
 
+      {/* ── Saisie du solde réel ── */}
       <div>
         <label className={FIELD_LABEL}>Solde compté physiquement (FCFA) *</label>
         <Input
@@ -523,13 +650,24 @@ function FermerSessionForm({
           placeholder="Montant en caisse"
         />
         {ecart !== null && (
-          <p className="text-xs mt-1" style={{ color: ecart !== 0 ? 'var(--status-warning)' : 'var(--status-success)' }}>
-            Écart : {ecart > 0 ? '+' : ''}{formatXOF(ecart)}
-            {ecart !== 0 && ' — un écart a été détecté'}
-          </p>
+          <div
+            className="mt-2 px-3 py-2 rounded-lg flex items-center justify-between"
+            style={{
+              backgroundColor: ecart === 0 ? 'var(--status-success-bg)' : 'var(--status-warning-bg)',
+              border: `1px solid ${ecart === 0 ? 'var(--status-success)' : 'var(--status-warning)'}`,
+            }}
+          >
+            <span className="text-xs font-medium" style={{ color: ecart === 0 ? 'var(--status-success)' : 'var(--status-warning)' }}>
+              {ecart === 0 ? 'Aucun écart — caisse conforme' : 'Écart détecté'}
+            </span>
+            <span className="font-data text-sm font-semibold" style={{ color: ecart === 0 ? 'var(--status-success)' : 'var(--status-warning)' }}>
+              {ecart > 0 ? '+' : ''}{formatXOF(ecart)}
+            </span>
+          </div>
         )}
       </div>
 
+      {/* ── Notes ── */}
       <div>
         <label className={FIELD_LABEL}>Notes de clôture</label>
         <textarea
@@ -537,15 +675,16 @@ function FermerSessionForm({
           rows={2}
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          placeholder="Optionnel"
+          placeholder="Optionnel — justification d'un éventuel écart…"
         />
       </div>
 
+      {/* ── Actions ── */}
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Annuler</Button>
         <Button
           loading={mut.isPending}
-          disabled={!soldeReel}
+          disabled={!soldeReel || isLoading}
           onClick={() => mut.mutate()}
         >
           Fermer la session
