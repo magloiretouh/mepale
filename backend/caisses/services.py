@@ -8,6 +8,26 @@ from django.db import transaction
 from django.utils import timezone
 
 
+def _auto_entry_caisse(mouvement):
+    """Crée l'écriture comptable pour un mouvement de caisse approuvé."""
+    from comptabilite.utils.accounting_auto import create_auto_entry
+    from .models import MouvementCaisse
+
+    entry_type    = 'income' if mouvement.type == MouvementCaisse.Type.ENTREE else 'expense'
+    category_name = mouvement.categorie.nom if mouvement.categorie else None
+    label         = mouvement.libelle or (category_name or 'Mouvement caisse')
+
+    create_auto_entry(
+        type          = entry_type,
+        label         = label,
+        amount        = mouvement.montant,
+        date          = mouvement.date_approbation.date() if mouvement.date_approbation else mouvement.created_at.date(),
+        category_name = category_name,
+        ref_type      = 'mouvement_caisse',
+        ref_id        = mouvement.id,
+    )
+
+
 def get_seuil_approbation() -> Decimal:
     from .models import ParametresCaisse
     return ParametresCaisse.get().seuil_approbation
@@ -40,6 +60,7 @@ def _appliquer_mouvement_au_solde(mouvement, user):
     mouvement.date_approbation = timezone.now()
     mouvement.save(update_fields=['statut', 'approuve_par', 'date_approbation'])
 
+    _auto_entry_caisse(mouvement)
     return mouvement
 
 

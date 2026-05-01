@@ -109,6 +109,34 @@ def _fmt_amount(n):
     return f"{int(round(float(n))):,}".replace(",", " ")
 
 
+def _auto_entry_rh(payment, employee, category_name: str):
+    """Crée l'écriture comptable automatique pour un paiement RH."""
+    from comptabilite.utils.accounting_auto import create_auto_entry
+    from datetime import date
+
+    type_labels = {
+        'salaire': 'Salaire',
+        'prime':   'Prime',
+        'avance':  'Avance',
+        'autre':   'Paiement',
+    }
+    prefix = type_labels.get(payment.type, 'Paiement')
+    period = f" — {payment.period_month}" if payment.period_month else ""
+    label  = payment.label or f"{prefix} {employee.name}{period}"
+
+    amount = payment.gross_amount or payment.amount
+
+    create_auto_entry(
+        type          = 'expense',
+        label         = label,
+        amount        = amount,
+        date          = payment.payment_date if payment.payment_date else date.today(),
+        category_name = category_name,
+        ref_type      = 'salary_payment',
+        ref_id        = payment.id,
+    )
+
+
 def _create_payment(data, rates):
     """
     Crée un SalaryPayment à partir des données.
@@ -188,6 +216,7 @@ def _create_payment(data, rates):
             prime_type_id=data.get("prime_type_id"),
             linked_salary_id=data.get("linked_salary_id"),
         )
+        _auto_entry_rh(payment, employee, 'Charges de personnel')
         return payment, None
 
     # ── Avance ────────────────────────────────────────────────────────────────
@@ -206,6 +235,7 @@ def _create_payment(data, rates):
             amount=amount,
             payment_date=payment_date,
         )
+        _auto_entry_rh(payment, employee, 'Charges de personnel')
         return payment, None
 
     # ── Prime / Autre ──────────────────────────────────────────────────────────
@@ -229,6 +259,8 @@ def _create_payment(data, rates):
             prime_type_id=data.get("prime_type_id"),
             linked_salary_id=data.get("linked_salary_id"),
         )
+        cat = 'Charges de personnel' if ptype == SalaryPayment.PaymentType.PRIME else 'Autres charges'
+        _auto_entry_rh(payment, employee, cat)
         return payment, None
 
     else:

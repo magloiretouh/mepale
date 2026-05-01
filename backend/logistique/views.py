@@ -2073,6 +2073,17 @@ class FactureFournisseurViewSet(viewsets.ModelViewSet):
             # F6 — Recalcul depuis la base (intégrité garantie)
             facture.recalculer_montant_paye()
 
+        from comptabilite.utils.accounting_auto import create_auto_entry
+        create_auto_entry(
+            type          = 'expense',
+            label         = f"Paiement facture {facture.reference} — {facture.fournisseur.raison_sociale}",
+            amount        = paiement.montant,
+            date          = paiement.date_paiement,
+            category_name = 'Achats de matières premières',
+            ref_type      = 'paiement_fournisseur',
+            ref_id        = paiement.id,
+        )
+
         logger.info(
             "Paiement %s FCFA sur facture %s par %s",
             paiement.montant, facture.reference, request.user,

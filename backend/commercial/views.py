@@ -697,6 +697,17 @@ class FactureVenteViewSet(ModelViewSet):
             # recalculer_reglement() est appelé dans save() du ReglementClient
             facture.refresh_from_db()
 
+        from comptabilite.utils.accounting_auto import create_auto_entry
+        create_auto_entry(
+            type          = 'income',
+            label         = f"Règlement facture {facture.reference} — {facture.client.raison_sociale}",
+            amount        = reglement.montant,
+            date          = reglement.date_reglement,
+            category_name = 'Ventes de produits finis',
+            ref_type      = 'reglement_client',
+            ref_id        = reglement.id,
+        )
+
         return Response(
             {
                 'detail': f'Règlement de {reglement.montant} FCFA enregistré.',
