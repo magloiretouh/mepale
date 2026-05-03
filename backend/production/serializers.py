@@ -327,7 +327,11 @@ class LotSerializer(serializers.ModelSerializer):
             'jours_avant_peremption', 'est_proche_peremption',
             'notes', 'date_creation',
         ]
-        read_only_fields = ['date_creation']
+        read_only_fields = ['date_creation', 'quantite_restante']
+
+    def create(self, validated_data):
+        validated_data['quantite_restante'] = validated_data['quantite_initiale']
+        return super().create(validated_data)
 
 
 class ConsommationLotSerializer(serializers.ModelSerializer):
