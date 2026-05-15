@@ -531,11 +531,12 @@ export function NomenclatureList() {
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, active: !f.active }))}
-                  className={cn(
-                    'relative w-10 h-5.5 rounded-full transition-all duration-200 flex-shrink-0',
-                    form.active ? 'bg-[--accent]' : 'bg-[--border]'
-                  )}
-                  style={{ height: '22px', width: '40px' }}
+                  className="relative rounded-full transition-all duration-200 flex-shrink-0"
+                  style={{
+                    height: '22px',
+                    width: '40px',
+                    backgroundColor: form.active ? 'var(--accent)' : 'var(--text-secondary)',
+                  }}
                 >
                   <span
                     className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"

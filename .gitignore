@@ -76,3 +76,6 @@ desktop.ini
 *.suo
 *.sw?
 *.sln
+
+# Claude Code worktrees
+.claude/worktrees/

@@ -12,6 +12,7 @@ from .views import (
     update_profil_view,
     change_password_view,
     UtilisateurListCreateView,
+    UtilisateurListeAffectationView,
     UtilisateurDetailView,
     UtilisateurToggleView,
     UtilisateurResetPasswordView,
@@ -29,6 +30,7 @@ urlpatterns = [
     path('change-password/', change_password_view,       name='auth-change-password'),
 
     # ── Gestion utilisateurs (admin) ──
+    path('utilisateurs/liste-affectation/',            UtilisateurListeAffectationView.as_view(), name='utilisateurs-liste-affectation'),
     path('utilisateurs/',                              UtilisateurListCreateView.as_view(),    name='utilisateurs-list'),
     path('utilisateurs/<uuid:pk>/',                    UtilisateurDetailView.as_view(),        name='utilisateurs-detail'),
     path('utilisateurs/<uuid:pk>/toggle/',             UtilisateurToggleView.as_view(),        name='utilisateurs-toggle'),

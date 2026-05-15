@@ -51,7 +51,10 @@ function fmtDate(iso: string): string {
 }
 
 function fmtAmount(n: number): string {
-  return n.toLocaleString('fr-FR') + ' FCFA'
+  return Math.abs(n).toLocaleString('fr-TG', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }) + ' FCFA'
 }
 
 async function downloadBlob(url: string, filename: string) {
@@ -537,7 +540,7 @@ function EntriesTab() {
                   Recettes
                 </p>
                 <p className="font-data text-sm font-semibold truncate" style={{ color: 'var(--accent)' }}>
-                  +{fmtAmount(totalIncome)}
+                  {fmtAmount(totalIncome)}
                 </p>
               </div>
             </div>
@@ -555,7 +558,7 @@ function EntriesTab() {
                   Charges
                 </p>
                 <p className="font-data text-sm font-semibold truncate" style={{ color: 'var(--status-danger)' }}>
-                  -{fmtAmount(totalExpense)}
+                  {fmtAmount(totalExpense)}
                 </p>
               </div>
             </div>
@@ -580,7 +583,7 @@ function EntriesTab() {
                   className="font-data text-sm font-semibold truncate"
                   style={{ color: netResult >= 0 ? 'var(--accent)' : 'var(--status-danger)' }}
                 >
-                  {netResult >= 0 ? '+' : ''}{fmtAmount(netResult)}
+                  {fmtAmount(netResult)}
                 </p>
               </div>
             </div>

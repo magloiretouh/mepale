@@ -158,6 +158,20 @@ class UtilisateurListCreateView(generics.ListCreateAPIView):
         return UtilisateurListSerializer
 
 
+class UtilisateurListeAffectationView(generics.GenericAPIView):
+    """
+    GET /api/v1/auth/utilisateurs/liste-affectation/
+    Retourne la liste minimale (id + nom_complet) des utilisateurs actifs.
+    Accessible à tout staff authentifié (pour les sélecteurs d'affectation).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = Utilisateur.objects.filter(is_active=True).order_by('nom', 'prenom')
+        data = [{'id': str(u.id), 'nom_complet': u.nom_complet} for u in qs]
+        return Response(data)
+
+
 class UtilisateurDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     GET    /api/v1/auth/utilisateurs/<id>/

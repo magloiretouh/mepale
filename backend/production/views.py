@@ -623,10 +623,10 @@ class OrdreFabricationViewSet(viewsets.ModelViewSet):
                 {'detail': 'employe est obligatoire.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        from authentication.models import Utilisateur
+        from rh.models import Employee
         try:
-            employe = Utilisateur.objects.get(id=employe_id)
-        except Utilisateur.DoesNotExist:
+            employe = Employee.objects.get(id=employe_id)
+        except (Employee.DoesNotExist, ValueError):
             return Response({'detail': 'Employé introuvable.'}, status=status.HTTP_404_NOT_FOUND)
 
         aff, created = AffectationEmployeOF.objects.get_or_create(

@@ -256,7 +256,7 @@ class NomenclatureCreateSerializer(serializers.ModelSerializer):
 # ---------------------------------------------------------------------------
 
 class AffectationSerializer(serializers.ModelSerializer):
-    employe_nom = serializers.CharField(source='employe.nom_complet', read_only=True)
+    employe_nom = serializers.CharField(source='employe.name', read_only=True)
 
     class Meta:
         model  = AffectationEmployeOF

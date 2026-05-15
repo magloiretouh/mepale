@@ -420,7 +420,7 @@ class AffectationEmployeOF(models.Model):
         OrdreFabrication, on_delete=models.CASCADE, related_name='affectations'
     )
     employe = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        'rh.Employee', on_delete=models.CASCADE,
         related_name='affectations_of'
     )
     role_prod = models.CharField('Rôle sur OF', max_length=100, blank=True)

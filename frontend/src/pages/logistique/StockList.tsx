@@ -75,6 +75,10 @@ const FILTRES_STOCK: { label: string; value: FiltreStock }[] = [
   { label: 'Normaux', value: 'ok' },
 ]
 
+const now      = new Date()
+const dateDebut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+const dateFin   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
 export function StockList() {
   const [search, setSearch]   = useState('')
   const [filtre, setFiltre]   = useState<FiltreStock>('tous')
@@ -91,6 +95,16 @@ export function StockList() {
     staleTime:     0,   // toujours re-fetche à la navigation (stock peut changer depuis n'importe quel module)
     refetchOnWindowFocus: true,
   })
+
+  const { data: rapportMois } = useQuery({
+    queryKey: ['stock-rapport-mois', dateDebut, dateFin],
+    queryFn:  () => logistiqueApi.rapportStockPeriodique({ date_debut: dateDebut, date_fin: dateFin }),
+    select:   (r) => r.data,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const totalEntrees = rapportMois?.rapport.reduce((s, r) => s + r.total_entrees, 0) ?? null
+  const totalSorties = rapportMois?.rapport.reduce((s, r) => s + r.total_sorties, 0) ?? null
 
   const stocks    = data?.results ?? []
   const enAlerte  = stocks.filter((s) => s.en_alerte).length
@@ -132,13 +146,13 @@ export function StockList() {
         />
         <KpiCard
           label="Entrées (mois)"
-          value="—"
+          value={totalEntrees !== null ? totalEntrees.toLocaleString('fr-TG') : '—'}
           icon={<TrendingUp size={16} />}
           color="var(--status-success)"
         />
         <KpiCard
           label="Sorties (mois)"
-          value="—"
+          value={totalSorties !== null ? totalSorties.toLocaleString('fr-TG') : '—'}
           icon={<TrendingDown size={16} />}
           color="var(--status-warning)"
         />

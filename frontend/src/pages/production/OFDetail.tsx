@@ -106,9 +106,9 @@ function TabAffectations({ ofId }: { ofId: string }) {
   // Charger les employés
   const { data: employes } = useQuery({
     queryKey: ['employes-list'],
-    queryFn: () => fetch('/api/v1/rh/employes/?page_size=100', {
+    queryFn: () => fetch('/api/v1/rh/employees/?active=1', {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
-    }).then(r => r.json()).then((d: { results?: { id: string; nom_complet: string }[] }) => d.results ?? []),
+    }).then(r => r.json()).then((d: { id: number; name: string }[]) => d),
   })
 
   const { mutate: affecter, isPending: affecting } = useMutation({
@@ -148,8 +148,8 @@ function TabAffectations({ ofId }: { ofId: string }) {
                 style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               >
                 <option value="">Sélectionner…</option>
-                {(employes ?? []).map((e: { id: string; nom_complet: string }) => (
-                  <option key={e.id} value={e.id}>{e.nom_complet}</option>
+                {(employes ?? []).map((e: { id: number; name: string }) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
             </div>
