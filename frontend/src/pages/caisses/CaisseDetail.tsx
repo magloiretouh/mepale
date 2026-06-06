@@ -3,7 +3,7 @@
  * Gestion session (ouverture/fermeture) + mouvements + historique.
  */
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -26,7 +26,7 @@ const SELECT_CLASS =
 
 const FIELD_LABEL = 'block text-xs font-medium text-[--text-secondary] uppercase tracking-wider mb-1.5'
 
-const STATUT_BADGE: Record<string, JSX.Element> = {
+const STATUT_BADGE: Record<string, React.ReactElement> = {
   approuve:   <Badge variant="success">Approuvé</Badge>,
   en_attente: <Badge variant="warning">En attente</Badge>,
   rejete:     <Badge variant="danger">Rejeté</Badge>,

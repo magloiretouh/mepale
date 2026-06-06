@@ -379,14 +379,14 @@ export function UtilisateursPage() {
       toast.error(e?.response?.data?.detail ?? 'Erreur.'),
   })
 
-  const filtered = users.filter(u => {
+  const filtered = users.filter((u: UtilisateurItem) => {
     if (search && !u.nom_complet.toLowerCase().includes(search.toLowerCase()) &&
         !u.username.toLowerCase().includes(search.toLowerCase())) return false
     if (filterRole && u.role !== filterRole) return false
     return true
   })
 
-  const activeCount   = users.filter(u => u.is_active).length
+  const activeCount   = users.filter((u: UtilisateurItem) => u.is_active).length
   const inactiveCount = users.length - activeCount
 
   return (
@@ -487,7 +487,7 @@ export function UtilisateursPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((u, i) => {
+                  {filtered.map((u: UtilisateurItem, i: number) => {
                     const isSelf = moi?.id === u.id
                     return (
                       <tr key={u.id}
@@ -504,7 +504,7 @@ export function UtilisateursPage() {
                               className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold"
                               style={{ backgroundColor: 'var(--accent-dim)', color: 'var(--accent)' }}
                             >
-                              {u.nom_complet.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                              {u.nom_complet.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()}
                             </div>
                             <div>
                               <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>

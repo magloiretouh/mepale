@@ -418,8 +418,8 @@ function EntriesTab() {
   })
 
   const categories = {
-    income:  cats.filter(c => c.type === 'income'),
-    expense: cats.filter(c => c.type === 'expense'),
+    income:  cats.filter((c: CategorieComptable) => c.type === 'income'),
+    expense: cats.filter((c: CategorieComptable) => c.type === 'expense'),
   }
 
   const params = {
@@ -437,8 +437,8 @@ function EntriesTab() {
   })
 
   // Recap
-  const totalIncome  = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0)
-  const totalExpense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0)
+  const totalIncome  = entries.filter((e: EcritureComptableList) => e.type === 'income').reduce((s: number, e: EcritureComptableList) => s + e.amount, 0)
+  const totalExpense = entries.filter((e: EcritureComptableList) => e.type === 'expense').reduce((s: number, e: EcritureComptableList) => s + e.amount, 0)
   const netResult    = totalIncome - totalExpense
 
   const handleExcelExport = useCallback(() => {
@@ -628,7 +628,7 @@ function EntriesTab() {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((e, i) => (
+                {entries.map((e: EcritureComptableList, i: number) => (
                   <tr
                     key={e.id}
                     style={{

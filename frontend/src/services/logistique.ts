@@ -97,6 +97,7 @@ export interface StockArticle {
   /** M5 — Quantité commandée en BC ouverts (on-order), non encore réceptionnée */
   quantite_en_commande: number
   seuil_alerte: number; stock_min: number; stock_securite: number; qte_reappro: number
+  en_alerte: boolean
   est_sous_seuil: boolean
   /** S6 — True si dispo < stock_min (commande urgente requise) */
   est_critique: boolean

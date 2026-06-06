@@ -66,7 +66,7 @@ function ModalPayer({
   const [datePaie, setDatePaie] = useState(new Date().toISOString().slice(0, 10))
 
   const payerMut = useMutation({
-    mutationFn: (data: Partial<PaiementFacture>) =>
+    mutationFn: (data: { montant: number; mode_paiement: ModePaiement; reference_paiement?: string; date_paiement: string }) =>
       logistiqueApi.enregistrerPaiement(facture!.id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['factures'] })
@@ -757,7 +757,7 @@ export function FactureList() {
                           {/* Échéance */}
                           <td className="px-3 py-3 font-data text-xs"
                             style={{ color: enRetard && payable ? 'var(--status-danger)' : 'var(--text-muted)' }}>
-                            {formatDate(f.date_echeance)}
+                            {f.date_echeance ? formatDate(f.date_echeance) : '—'}
                           </td>
 
                           {/* BC */}

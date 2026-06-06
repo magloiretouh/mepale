@@ -73,7 +73,7 @@ export function ConditionTarifaireList() {
 
   const { data: conditions = [], isLoading } = useQuery({
     queryKey: ['conditions-tarifaires'],
-    queryFn:  () => logistiqueApi.listConditionsTarifaires().then(r => r.data.results ?? r.data),
+    queryFn:  () => logistiqueApi.listConditionsTarifaires().then(r => r.data),
   })
 
   // ── Mutations ─────────────────────────────────────────────────────────────
@@ -346,7 +346,7 @@ export function ConditionTarifaireList() {
                       </td>
                     </tr>
                   )
-                  : conditions.map(c => {
+                  : conditions.map((c: ConditionTarifaire) => {
                     const niveauCfg = NIVEAU_CONFIG[c.niveau]
                     const NiveauIcon = niveauCfg.Icon
                     return (

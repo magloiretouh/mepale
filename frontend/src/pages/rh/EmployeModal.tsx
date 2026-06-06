@@ -116,9 +116,9 @@ export function EmployeModal({ isOpen, onClose, employee, onSuccess }: Props) {
       const payload = {
         name:                    form.name.trim(),
         role:                    form.role.trim() || undefined,
-        contract_type:           form.contract_type || undefined,
+        contract_type:           (form.contract_type || undefined) as 'CDI' | 'CDD' | 'temps_partiel' | 'extra' | 'stage' | undefined,
         category_id:             form.category_id ? parseInt(form.category_id) : undefined,
-        monthly_salary:          form.monthly_salary ? parseFloat(form.monthly_salary) : undefined,
+        monthly_salary:          form.monthly_salary || undefined,
         hire_date:               form.hire_date || undefined,
         birth_date:              form.birth_date || undefined,
         phone:                   form.phone.trim() || undefined,

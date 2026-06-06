@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 
 import {
   logistiqueApi,
-  type BonCommande, type StatutBC, type LigneDemandeAchat, type ConditionTarifaire,
+  type BonCommande, type StatutBC, type LigneDemandeAchat, type ConditionTarifaire, type LigneBonCommande,
 } from '@/services/logistique'
 import { productionApi, type Article } from '@/services/production'
 import { Badge }  from '@/components/ui/Badge'
@@ -345,6 +345,7 @@ function CreateBCModal({
         prix_unitaire:      i.prix_unitaire_estime ? String(i.prix_unitaire_estime) : '',
         ligne_da_id:        i.id,
         da_ref:             i.da_ref,
+        conditions:         [] as PendingCondition[],
       })),
     }))
     setDaPhase('form')
@@ -439,7 +440,7 @@ function CreateBCModal({
           quantite_commandee: parseFloat(l.quantite_commandee),
           prix_unitaire:      parseFloat(l.prix_unitaire) || 0,
           ...(l.ligne_da_id ? { ligne_da_id: l.ligne_da_id } : {}),
-        })),
+        })) as unknown as LigneBonCommande[],
       })
       const bc = bcRes.data
       const promises: Promise<any>[] = []

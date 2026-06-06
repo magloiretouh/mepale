@@ -15,7 +15,7 @@ import { Badge }   from '@/components/ui/Badge'
 import { Button }  from '@/components/ui/Button'
 import { Input }   from '@/components/ui/Input'
 import { cn }      from '@/lib/utils'
-import { productionApi, type Article, type TypeArticle } from '@/services/production'
+import { productionApi, type Article, type TypeArticle, type UniteMesure } from '@/services/production'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -217,12 +217,12 @@ export function ArticleList() {
 
   // ── Unités de mesure ──────────────────────────────────────────────────────
 
-  const { data: unites = [] } = useQuery({
+  const { data: unites = [] } = useQuery<UniteMesure[]>({
     queryKey: ['unites'],
     queryFn:  () =>
       productionApi.listUnites().then((r) => {
         const d = r.data as unknown
-        return Array.isArray(d) ? d : ((d as { results?: typeof d }).results ?? [])
+        return Array.isArray(d) ? d : ((d as { results?: UniteMesure[] }).results ?? [])
       }),
   })
 
@@ -231,7 +231,7 @@ export function ArticleList() {
   const getSavePayload = () => ({
     ...form,
     prix_standard:
-      form.prix_standard !== '' ? parseFloat(form.prix_standard) : null,
+      form.prix_standard !== '' ? parseFloat(form.prix_standard) : undefined,
     duree_vie_jours:
       form.duree_vie_jours !== '' ? parseInt(form.duree_vie_jours, 10) : null,
     unite_achat:
@@ -260,8 +260,8 @@ export function ArticleList() {
   const { mutate: save, isPending } = useMutation({
     mutationFn: () =>
       editing
-        ? productionApi.updateArticle(editing.id, getSavePayload())
-        : productionApi.createArticle(getSavePayload() as ArticleForm & { unite: string }),
+        ? productionApi.updateArticle(editing.id, getSavePayload() as Parameters<typeof productionApi.updateArticle>[1])
+        : productionApi.createArticle(getSavePayload() as unknown as Parameters<typeof productionApi.createArticle>[0]),
     onSuccess: () => {
       toast.success(editing ? 'Article modifié' : 'Article créé')
       qc.invalidateQueries({ queryKey: ['articles'] })

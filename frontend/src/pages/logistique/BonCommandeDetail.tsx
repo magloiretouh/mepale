@@ -437,7 +437,7 @@ function ModalAjouterLigne({
     queryFn:  () => logistiqueApi.listArticlesFournisseur(fournisseurId).then(r => r.data.results ?? r.data),
     enabled:  !!fournisseurId,
   })
-  const fournisseurPrix = (fournisseurArticlesRaw ?? []) as Array<{ article: string; prix_unitaire: string }>
+  const fournisseurPrix = (fournisseurArticlesRaw ?? []) as Array<{ article: string; prix_unitaire: number }>
 
   useEffect(() => {
     if (!articleId) return
@@ -536,7 +536,7 @@ function ModalAjouterLigne({
 function ModalModifierLigne({
   ligne, onClose, onSuccess,
 }: {
-  ligne: { id: string; article_detail: { designation: string; unite_code: string }; quantite_commandee: string; prix_unitaire: string }
+  ligne: { id: string; article_detail: { designation: string; unite_code: string }; quantite_commandee: number | string; prix_unitaire: number | string }
   onClose: () => void; onSuccess: () => void
 }) {
   const [qte,  setQte]  = useState(String(ligne.quantite_commandee))

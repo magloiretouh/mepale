@@ -117,7 +117,7 @@ function LigneRow({
 
       {/* Qté théorique */}
       <td className="px-3 py-3 font-data text-xs text-[--text-secondary]">
-        {ligne.quantite_theorique.toLocaleString('fr-TG')}
+        {ligne.quantite_theorique?.toLocaleString('fr-TG') ?? '—'}
       </td>
 
       {/* Qté comptée */}
