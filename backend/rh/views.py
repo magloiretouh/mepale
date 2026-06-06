@@ -5,8 +5,10 @@ Base URL : /api/v1/rh/
 
 import logging
 from decimal import Decimal
+from datetime import date as date_type
 
 from django.db import transaction
+from django.utils import timezone
 from django.db.models import Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -20,6 +22,7 @@ from .models import (
     DemandeConge,
     Employee,
     EmployeeCategory,
+    JourFerie,
     PayrollDraft,
     Pointage,
     PrimeType,
@@ -33,6 +36,7 @@ from .serializers import (
     DemandeCongeSerializer,
     EmployeeCategorySerializer,
     EmployeeSerializer,
+    JourFerieSerializer,
     PayrollDraftSerializer,
     PointageSerializer,
     PrimeTypeSerializer,
@@ -53,6 +57,21 @@ logger = logging.getLogger("mepale")
 def _get_rates():
     """Retourne l'instance singleton des taux sociaux."""
     return SocialRates.get_instance()
+
+
+def _paginate(request, qs, default_limit=500, max_limit=1000):
+    """Pagination légère par limit/offset sans changer le format de réponse."""
+    try:
+        limit = min(int(request.query_params.get("limit", default_limit)), max_limit)
+    except (ValueError, TypeError):
+        limit = default_limit
+    try:
+        offset = max(0, int(request.query_params.get("offset", 0)))
+    except (ValueError, TypeError):
+        offset = 0
+    total = qs.count()
+    items = qs[offset: offset + limit]
+    return items, total, limit, offset
 
 
 def _calculate_cotisations(gross, taxable_primes, rates, has_social_contributions):
@@ -280,7 +299,8 @@ class EmployeeListCreateView(APIView):
         active = request.query_params.get("active")
         if active == "1":
             qs = qs.filter(is_active=True)
-        return Response(EmployeeSerializer(qs, many=True).data)
+        items, total, limit, offset = _paginate(request, qs)
+        return Response(EmployeeSerializer(items, many=True).data)
 
     def post(self, request):
         data = request.data
@@ -538,7 +558,8 @@ class SalaryPaymentListCreateView(APIView):
         if month:
             qs = qs.filter(period_month=month)
 
-        return Response(SalaryPaymentSerializer(qs, many=True).data)
+        items, total, limit, offset = _paginate(request, qs)
+        return Response(SalaryPaymentSerializer(items, many=True).data)
 
     def post(self, request):
         data = request.data
@@ -1103,6 +1124,41 @@ class AdminSocialRatesView(APIView):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# JOURS FÉRIÉS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class JourFerieListCreateView(APIView):
+    permission_classes = [IsRHStaff]
+
+    def get(self, request):
+        qs = JourFerie.objects.order_by("date")
+        return Response(JourFerieSerializer(qs, many=True).data)
+
+    def post(self, request):
+        ser = JourFerieSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data, status=201)
+
+
+class JourFerieDetailView(APIView):
+    permission_classes = [IsAdmin]
+
+    def put(self, request, pk):
+        jf = get_object_or_404(JourFerie, pk=pk)
+        ser = JourFerieSerializer(jf, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
+    def delete(self, request, pk):
+        jf = get_object_or_404(JourFerie, pk=pk)
+        jf.delete()
+        return Response(status=204)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # CONGÉS — TYPES
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1170,7 +1226,8 @@ class DemandeCongeListCreateView(APIView):
             qs = qs.filter(type_conge_id=type_id)
         if annee:
             qs = qs.filter(date_debut__year=annee)
-        return Response(DemandeCongeSerializer(qs, many=True).data)
+        items, total, limit, offset = _paginate(request, qs)
+        return Response(DemandeCongeSerializer(items, many=True).data)
 
     def post(self, request):
         d = request.data
@@ -1184,6 +1241,23 @@ class DemandeCongeListCreateView(APIView):
             return Response({"detail": "Dates invalides (format YYYY-MM-DD)."}, status=400)
         if date_fin < date_debut:
             return Response({"detail": "La date de fin doit être ≥ à la date de début."}, status=400)
+
+        # Bloquer si une demande active chevauche la période demandée
+        chevauchement = DemandeConge.objects.filter(
+            employee=employee,
+            statut__in=[
+                DemandeConge.Statut.BROUILLON,
+                DemandeConge.Statut.SOUMISE,
+                DemandeConge.Statut.APPROUVEE,
+            ],
+            date_debut__lte=date_fin,
+            date_fin__gte=date_debut,
+        ).exists()
+        if chevauchement:
+            return Response(
+                {"detail": "Une demande de congé existe déjà sur cette période pour cet employé."},
+                status=409,
+            )
 
         demande = DemandeConge(
             employee=employee,
@@ -1220,6 +1294,22 @@ class DemandeCongeDetailView(APIView):
                 return Response({"detail": "Dates invalides."}, status=400)
             if date_fin < date_debut:
                 return Response({"detail": "La date de fin doit être ≥ à la date de début."}, status=400)
+            # Vérifier que les nouvelles dates ne chevauchent pas une autre demande active
+            chevauchement = DemandeConge.objects.filter(
+                employee=demande.employee,
+                statut__in=[
+                    DemandeConge.Statut.BROUILLON,
+                    DemandeConge.Statut.SOUMISE,
+                    DemandeConge.Statut.APPROUVEE,
+                ],
+                date_debut__lte=date_fin,
+                date_fin__gte=date_debut,
+            ).exclude(pk=demande.pk).exists()
+            if chevauchement:
+                return Response(
+                    {"detail": "Une demande de congé existe déjà sur cette période pour cet employé."},
+                    status=409,
+                )
             demande.date_debut = date_debut
             demande.date_fin   = date_fin
             demande.calculer_nb_jours()
@@ -1250,6 +1340,20 @@ class DemandeCongeActionView(APIView):
         if action == "soumettre":
             if demande.statut != DemandeConge.Statut.BROUILLON:
                 return Response({"detail": "La demande n'est pas en brouillon."}, status=400)
+            # Vérifier le solde pour les types non-libres
+            if demande.type_conge.mode_acquisition != TypeConge.ModeAcquisition.LIBRE:
+                solde = SoldeConge.objects.filter(
+                    employee=demande.employee,
+                    type_conge=demande.type_conge,
+                ).first()
+                solde_actuel = (solde.jours_acquis - solde.jours_pris) if solde else Decimal("0")
+                if solde_actuel < demande.nb_jours:
+                    return Response({
+                        "detail": (
+                            f"Solde insuffisant. Disponible : {solde_actuel}j, "
+                            f"Demandé : {demande.nb_jours}j."
+                        )
+                    }, status=400)
             demande.statut = DemandeConge.Statut.SOUMISE
             demande.save(update_fields=["statut"])
 
@@ -1257,17 +1361,29 @@ class DemandeCongeActionView(APIView):
             if demande.statut != DemandeConge.Statut.SOUMISE:
                 return Response({"detail": "La demande n'est pas soumise."}, status=400)
             with transaction.atomic():
+                # Vérification finale du solde avant débit
+                if demande.type_conge.mode_acquisition != TypeConge.ModeAcquisition.LIBRE:
+                    solde = SoldeConge.objects.select_for_update().filter(
+                        employee=demande.employee,
+                        type_conge=demande.type_conge,
+                    ).first()
+                    solde_actuel = (solde.jours_acquis - solde.jours_pris) if solde else Decimal("0")
+                    if solde_actuel < demande.nb_jours:
+                        return Response({
+                            "detail": (
+                                f"Solde insuffisant. Disponible : {solde_actuel}j, "
+                                f"Demandé : {demande.nb_jours}j."
+                            )
+                        }, status=400)
                 demande.statut        = DemandeConge.Statut.APPROUVEE
                 demande.approuve_par  = request.user
                 demande.approuve_le   = timezone.now()
                 demande.commentaire_rh = commentaire
                 demande.save(update_fields=["statut", "approuve_par", "approuve_le", "commentaire_rh"])
-                # Débiter le solde
+                # Débiter le solde (cumulatif, sans annee)
                 solde, _ = SoldeConge.objects.get_or_create(
                     employee=demande.employee,
                     type_conge=demande.type_conge,
-                    annee=demande.date_debut.year,
-                    defaults={"jours_acquis": demande.type_conge.quota_annuel},
                 )
                 solde.jours_pris = solde.jours_pris + demande.nb_jours
                 solde.save(update_fields=["jours_pris"])
@@ -1291,9 +1407,8 @@ class DemandeCongeActionView(APIView):
                         solde = SoldeConge.objects.get(
                             employee=demande.employee,
                             type_conge=demande.type_conge,
-                            annee=demande.date_debut.year,
                         )
-                        solde.jours_pris = max(0, solde.jours_pris - demande.nb_jours)
+                        solde.jours_pris = max(Decimal("0"), solde.jours_pris - demande.nb_jours)
                         solde.save(update_fields=["jours_pris"])
                     except SoldeConge.DoesNotExist:
                         pass
@@ -1310,60 +1425,109 @@ class DemandeCongeActionView(APIView):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+def _mois_complets_entre(d1: date_type, d2: date_type) -> int:
+    """Nombre de mois calendaires complets écoulés entre d1 (inclus) et d2 (exclu)."""
+    mois = (d2.year - d1.year) * 12 + (d2.month - d1.month)
+    if d2.day < d1.day:
+        mois -= 1
+    return max(0, mois)
+
+
 class SoldeCongeListView(APIView):
     permission_classes = [IsRHStaff]
 
     def get(self, request):
         qs = SoldeConge.objects.select_related("employee", "type_conge")
         emp_id  = request.query_params.get("employee_id")
-        annee   = request.query_params.get("annee")
         type_id = request.query_params.get("type_conge_id")
         if emp_id:
             qs = qs.filter(employee_id=emp_id)
-        if annee:
-            qs = qs.filter(annee=annee)
         if type_id:
             qs = qs.filter(type_conge_id=type_id)
         return Response(SoldeCongeSerializer(qs, many=True).data)
-
-    def post(self, request):
-        """Initialise (ou met à jour) les soldes pour tous les employés actifs pour une année."""
-        annee = request.data.get("annee")
-        if not annee:
-            return Response({"detail": "Champ 'annee' requis."}, status=400)
-        types = TypeConge.objects.filter(is_active=True)
-        employees = Employee.objects.filter(is_active=True)
-        created = updated = 0
-        for emp in employees:
-            for tc in types:
-                solde, is_new = SoldeConge.objects.get_or_create(
-                    employee=emp, type_conge=tc, annee=annee,
-                    defaults={"jours_acquis": tc.quota_annuel},
-                )
-                if is_new:
-                    created += 1
-                else:
-                    updated += 1
-        return Response({"detail": f"{created} soldes créés, {updated} existants non modifiés."}, status=201)
 
 
 class SoldeCongeDetailView(APIView):
     permission_classes = [IsRHStaff]
 
     def put(self, request, pk):
+        """Correction manuelle : saisir directement le solde restant souhaité."""
         solde = get_object_or_404(SoldeConge, pk=pk)
-        if "jours_acquis" in request.data:
-            try:
-                solde.jours_acquis = Decimal(str(request.data["jours_acquis"]))
-            except Exception:
-                return Response({"detail": "Valeur invalide pour jours_acquis."}, status=400)
-        if "jours_pris" in request.data:
-            try:
-                solde.jours_pris = Decimal(str(request.data["jours_pris"]))
-            except Exception:
-                return Response({"detail": "Valeur invalide pour jours_pris."}, status=400)
-        solde.save()
+        if "solde_actuel" not in request.data:
+            return Response({"detail": "Champ 'solde_actuel' requis."}, status=400)
+        try:
+            nouveau_solde = Decimal(str(request.data["solde_actuel"]))
+        except Exception:
+            return Response({"detail": "Valeur invalide pour solde_actuel."}, status=400)
+        # On ajuste jours_acquis pour que solde_actuel = nouveau_solde
+        solde.jours_acquis = solde.jours_pris + nouveau_solde
+        solde.save(update_fields=["jours_acquis"])
         return Response(SoldeCongeSerializer(solde).data)
+
+
+class ActualiserSoldesView(APIView):
+    """POST /rh/soldes-conge/actualiser/ — calcule et crédite les jours acquis."""
+    permission_classes = [IsRHStaff]
+
+    def post(self, request):
+        aujourd_hui = date_type.today()
+        employees   = Employee.objects.filter(is_active=True)
+        types       = TypeConge.objects.filter(is_active=True).exclude(
+            mode_acquisition=TypeConge.ModeAcquisition.LIBRE
+        )
+        total_credits = 0
+
+        with transaction.atomic():
+            for emp in employees:
+                for tc in types:
+                    solde, _ = SoldeConge.objects.get_or_create(
+                        employee=emp, type_conge=tc,
+                    )
+                    jours_a_ajouter = Decimal("0")
+
+                    if tc.mode_acquisition == TypeConge.ModeAcquisition.MENSUEL:
+                        # Point de départ : date_derniere_acquisition ou date d'embauche
+                        if solde.date_derniere_acquisition:
+                            depart = solde.date_derniere_acquisition
+                        elif emp.hire_date:
+                            depart = emp.hire_date
+                        else:
+                            continue  # Pas de date d'embauche → on ne peut pas calculer
+
+                        mois = _mois_complets_entre(depart, aujourd_hui)
+                        if mois <= 0:
+                            continue
+
+                        taux_mensuel = tc.quota_annuel / Decimal("12")
+                        jours_a_ajouter = taux_mensuel * mois
+
+                    elif tc.mode_acquisition == TypeConge.ModeAcquisition.ANNUEL:
+                        # Créditer le quota annuel si pas encore fait cette année
+                        annee_courante = aujourd_hui.year
+                        deja_fait = (
+                            solde.date_derniere_acquisition is not None
+                            and solde.date_derniere_acquisition.year >= annee_courante
+                        )
+                        if deja_fait:
+                            continue
+
+                        # Prorata si première année (embauche en cours d'année)
+                        if emp.hire_date and emp.hire_date.year == annee_courante:
+                            mois_restants = 12 - emp.hire_date.month + 1
+                            jours_a_ajouter = tc.quota_annuel * Decimal(mois_restants) / Decimal("12")
+                        else:
+                            jours_a_ajouter = tc.quota_annuel
+
+                    if jours_a_ajouter > 0:
+                        solde.jours_acquis += jours_a_ajouter
+                        solde.date_derniere_acquisition = aujourd_hui
+                        solde.save(update_fields=["jours_acquis", "date_derniere_acquisition"])
+                        total_credits += 1
+
+        return Response({
+            "detail": f"Acquisition effectuée. {total_credits} solde(s) mis à jour.",
+            "date": str(aujourd_hui),
+        })
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1385,7 +1549,8 @@ class PointageListCreateView(APIView):
             qs = qs.filter(employee_id=emp_id)
         if mois:
             qs = qs.filter(date__startswith=mois)
-        return Response(PointageSerializer(qs, many=True).data)
+        items, total, limit, offset = _paginate(request, qs, default_limit=500)
+        return Response(PointageSerializer(items, many=True).data)
 
     def post(self, request):
         employee = get_object_or_404(Employee, pk=request.data.get("employee"))

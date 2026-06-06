@@ -63,6 +63,21 @@ class IsLogistiqueStaff(BasePermission):
         )
 
 
+class IsLogistiqueManager(BasePermission):
+    """Responsables logistique — excluent le magasinier pour les actions sensibles (ex: seuils de stock)."""
+    ROLES_AUTORISES = [
+        Utilisateur.Role.ADMIN,
+        Utilisateur.Role.DIRECTEUR,
+        Utilisateur.Role.RESP_LOGISTIQUE,
+    ]
+
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and request.user.role in self.ROLES_AUTORISES
+        )
+
+
 class IsCommercialStaff(BasePermission):
     """Rôles autorisés pour le Commercial."""
     ROLES_AUTORISES = [

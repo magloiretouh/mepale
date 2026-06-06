@@ -156,8 +156,8 @@ export function EmployeDetail() {
   const congesAnnee = String(new Date().getFullYear())
 
   const { data: soldes = [], isLoading: soldesLoading } = useQuery({
-    queryKey: ['rh-soldes-conge-emp', empId, congesAnnee],
-    queryFn:  () => rhApi.listSoldesConge({ employee_id: empId, annee: congesAnnee }).then(r => r.data),
+    queryKey: ['rh-soldes-conge-emp', empId],
+    queryFn:  () => rhApi.listSoldesConge({ employee_id: empId }).then(r => r.data),
     enabled:  tab === 'conges' && !!empId,
   })
 
@@ -650,8 +650,8 @@ export function EmployeDetail() {
                         {s.type_conge_name}
                       </p>
                       <p className="text-lg font-bold font-data"
-                        style={{ color: s.jours_restants < 0 ? 'var(--status-danger)' : s.jours_restants === 0 ? 'var(--text-muted)' : 'var(--accent)' }}>
-                        {s.jours_restants}j
+                        style={{ color: s.solde_actuel < 0 ? 'var(--status-danger)' : s.solde_actuel === 0 ? 'var(--text-muted)' : 'var(--accent)' }}>
+                        {s.solde_actuel.toFixed(1)}j
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                         {s.jours_pris}j pris / {s.jours_acquis}j acquis

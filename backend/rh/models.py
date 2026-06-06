@@ -2,7 +2,7 @@
 MEPALE ERP — Modèles Ressources Humaines
 """
 
-from datetime import timedelta
+from datetime import timedelta, date as date_type
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -356,12 +356,57 @@ class PayrollDraft(models.Model):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def _calc_jours_ouvres(date_debut, date_fin):
-    """Compte les jours ouvrés (lun-ven) entre date_debut et date_fin inclus."""
+class JourFerie(models.Model):
+    """Jour férié légal ou conventionnel.
+
+    Si ``is_recurrent`` est True, ce jour est considéré férié chaque année
+    au même mois/jour (ex : 1er janvier, 1er mai).
+    Sinon, il s'applique uniquement à la date exacte stockée.
+    """
+
+    date = models.DateField(unique=True, verbose_name="Date")
+    name = models.CharField(max_length=100, verbose_name="Nom")
+    is_recurrent = models.BooleanField(
+        default=False,
+        verbose_name="Récurrent (même mois/jour chaque année)",
+    )
+
+    class Meta:
+        db_table = "jours_feries"
+        verbose_name = "Jour férié"
+        verbose_name_plural = "Jours fériés"
+        ordering = ["date"]
+
+    def __str__(self):
+        return f"{self.date} — {self.name}"
+
+
+def _get_jours_feries_set(date_debut: date_type, date_fin: date_type) -> set:
+    """Retourne l'ensemble des dates fériées dans la plage [date_debut, date_fin]."""
+    result = set()
+    for jf in JourFerie.objects.all():
+        if jf.is_recurrent:
+            for year in range(date_debut.year, date_fin.year + 1):
+                try:
+                    d = date_type(year, jf.date.month, jf.date.day)
+                    if date_debut <= d <= date_fin:
+                        result.add(d)
+                except ValueError:
+                    pass  # 29 fév sur une année non-bissextile
+        else:
+            if date_debut <= jf.date <= date_fin:
+                result.add(jf.date)
+    return result
+
+
+def _calc_jours_ouvres(date_debut, date_fin, feries=None):
+    """Compte les jours ouvrés (lun-ven, hors jours fériés) entre date_debut et date_fin inclus."""
+    if feries is None:
+        feries = set()
     jours = 0
     current = date_debut
     while current <= date_fin:
-        if current.weekday() < 5:
+        if current.weekday() < 5 and current not in feries:
             jours += 1
         current += timedelta(days=1)
     return jours
@@ -370,11 +415,20 @@ def _calc_jours_ouvres(date_debut, date_fin):
 class TypeConge(models.Model):
     """Type de congé (ex : Congé annuel, Maladie, Maternité, Sans solde…)."""
 
+    class ModeAcquisition(models.TextChoices):
+        MENSUEL = "mensuel", "Mensuel (quota ÷ 12 par mois)"
+        ANNUEL  = "annuel",  "Annuel (quota crédité au 1er janvier)"
+        LIBRE   = "libre",   "Libre (pas de calcul automatique)"
+
     name = models.CharField(max_length=100, unique=True, verbose_name="Nom")
     description = models.TextField(null=True, blank=True, verbose_name="Description")
     quota_annuel = models.DecimalField(
         max_digits=5, decimal_places=1, default=0,
         verbose_name="Quota annuel par défaut (jours ouvrés)",
+    )
+    mode_acquisition = models.CharField(
+        max_length=10, choices=ModeAcquisition.choices,
+        default=ModeAcquisition.LIBRE, verbose_name="Mode d'acquisition",
     )
     est_paye = models.BooleanField(default=True, verbose_name="Congé payé")
     is_active = models.BooleanField(default=True, verbose_name="Actif")
@@ -440,12 +494,21 @@ class DemandeConge(models.Model):
     def __str__(self):
         return f"{self.employee.name} — {self.type_conge.name} ({self.date_debut} → {self.date_fin})"
 
-    def calculer_nb_jours(self):
-        self.nb_jours = _calc_jours_ouvres(self.date_debut, self.date_fin)
+    def calculer_nb_jours(self, feries=None):
+        if feries is None:
+            feries = _get_jours_feries_set(self.date_debut, self.date_fin)
+        self.nb_jours = _calc_jours_ouvres(self.date_debut, self.date_fin, feries)
 
 
 class SoldeConge(models.Model):
-    """Solde de congé d'un employé pour un type et une année donnés."""
+    """Solde de congé cumulatif d'un employé pour un type donné.
+
+    Le solde est persistant et mis à jour uniquement lors :
+    - d'une acquisition (mensuelle/annuelle via le bouton dédié)
+    - d'une consommation (demande approuvée)
+    - d'une correction manuelle.
+    Le report d'une année sur l'autre est implicite (le solde n'est jamais remis à zéro).
+    """
 
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE,
@@ -455,28 +518,31 @@ class SoldeConge(models.Model):
         TypeConge, on_delete=models.PROTECT,
         related_name="soldes", verbose_name="Type de congé",
     )
-    annee = models.IntegerField(verbose_name="Année")
     jours_acquis = models.DecimalField(
-        max_digits=6, decimal_places=1, default=0,
-        verbose_name="Jours acquis",
+        max_digits=7, decimal_places=1, default=0,
+        verbose_name="Jours acquis (cumulatif)",
     )
     jours_pris = models.DecimalField(
-        max_digits=6, decimal_places=1, default=0,
-        verbose_name="Jours pris",
+        max_digits=7, decimal_places=1, default=0,
+        verbose_name="Jours pris (cumulatif)",
+    )
+    date_derniere_acquisition = models.DateField(
+        null=True, blank=True,
+        verbose_name="Date de la dernière acquisition",
     )
 
     class Meta:
         db_table = "soldes_conge"
-        unique_together = [("employee", "type_conge", "annee")]
+        unique_together = [("employee", "type_conge")]
         verbose_name = "Solde de congé"
         verbose_name_plural = "Soldes de congé"
         ordering = ["employee__name", "type_conge__name"]
 
     def __str__(self):
-        return f"{self.employee.name} — {self.type_conge.name} {self.annee}"
+        return f"{self.employee.name} — {self.type_conge.name}"
 
     @property
-    def jours_restants(self):
+    def solde_actuel(self):
         return self.jours_acquis - self.jours_pris
 
 

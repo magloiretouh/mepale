@@ -44,23 +44,26 @@ import {
   Layers,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useAuthStore } from '@/store/authStore'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SubNavItem {
-  label: string
-  icon:  React.ReactNode
-  path:  string
-  end?:  boolean  // correspondance exacte uniquement (évite prefix-match sur routes parentes)
+  label:  string
+  icon:   React.ReactNode
+  path:   string
+  end?:   boolean   // correspondance exacte uniquement (évite prefix-match sur routes parentes)
+  roles?: string[]  // si défini, visible uniquement pour ces rôles
 }
 
 interface NavItem {
-  label:        string
-  icon:         React.ReactNode
-  path:         string
-  badge?:       string
+  label:         string
+  icon:          React.ReactNode
+  path:          string
+  badge?:        string
   badgeVariant?: 'warning' | 'danger' | 'success'
-  children?:    SubNavItem[]
+  children?:     SubNavItem[]
+  roles?:        string[]  // si défini, visible uniquement pour ces rôles
 }
 
 // ─── Structure de navigation ──────────────────────────────────────────────────
@@ -79,6 +82,7 @@ const navGroups: Array<{ group: string; items: NavItem[] }> = [
         label: 'Production',
         icon:  <Factory size={15} />,
         path:  '/production',
+        roles: ['admin', 'directeur', 'resp_production', 'operateur'],
         children: [
           { label: 'Catalogue articles',    icon: <LayoutGrid size={13} />,    path: '/production/catalogue'             },
           { label: 'Lots & Alertes',        icon: <Package size={13} />,       path: '/production/lots'                  },
@@ -90,6 +94,7 @@ const navGroups: Array<{ group: string; items: NavItem[] }> = [
         label: 'Logistique',
         icon:  <Boxes size={15} />,
         path:  '/logistique',
+        roles: ['admin', 'directeur', 'resp_logistique', 'magasinier'],
         children: [
           { label: 'Stock',            icon: <BarChart2 size={13} />,     path: '/logistique/stock'          },
           { label: 'Fournisseurs',     icon: <Building2 size={13} />,     path: '/logistique/fournisseurs'   },
@@ -105,6 +110,7 @@ const navGroups: Array<{ group: string; items: NavItem[] }> = [
         label: 'Commercial',
         icon:  <ShoppingCart size={15} />,
         path:  '/commercial',
+        roles: ['admin', 'directeur', 'commercial'],
         children: [
           { label: 'Clients',           icon: <UserRound size={13} />,     path: '/commercial/clients'          },
           { label: 'Devis',             icon: <FileText size={13} />,      path: '/commercial/devis'            },
@@ -123,6 +129,7 @@ const navGroups: Array<{ group: string; items: NavItem[] }> = [
         label: 'Ressources Humaines',
         icon:  <Users size={15} />,
         path:  '/rh',
+        roles: ['admin', 'directeur', 'resp_rh'],
         children: [
           { label: 'Employés & Paie',   icon: <Banknote size={13} />, path: '/rh/employes'  },
           { label: 'Congés & Absences', icon: <Users size={13} />,    path: '/rh/conges'    },
@@ -133,6 +140,7 @@ const navGroups: Array<{ group: string; items: NavItem[] }> = [
         label: 'Caisses',
         icon:  <Wallet size={15} />,
         path:  '/caisses',
+        roles: ['admin', 'directeur', 'comptable', 'caissier'],
         children: [
           { label: 'Tableau de bord',  icon: <Landmark size={13} />,          path: '/caisses',           end: true },
           { label: 'En attente',       icon: <Clock size={13} />,             path: '/caisses/en-attente' },
@@ -140,7 +148,7 @@ const navGroups: Array<{ group: string; items: NavItem[] }> = [
           { label: 'Paramètres',       icon: <SlidersHorizontal size={13} />, path: '/caisses/parametres' },
         ],
       },
-      { label: 'Comptabilité', icon: <BarChart3 size={15} />, path: '/comptabilite' },
+      { label: 'Comptabilité', icon: <BarChart3 size={15} />, path: '/comptabilite', roles: ['admin', 'directeur', 'comptable'] },
     ],
   },
   {
@@ -150,6 +158,7 @@ const navGroups: Array<{ group: string; items: NavItem[] }> = [
         label: 'Administration',
         icon:  <Settings size={15} />,
         path:  '/administration',
+        roles: ['admin', 'directeur'],
         children: [
           { label: "Types d'articles",    icon: <Tag size={13} />,              path: '/administration/types-articles'        },
           { label: 'Unités de mesure',    icon: <Ruler size={13} />,            path: '/administration/unites-mesure'         },
@@ -453,6 +462,25 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+  const { utilisateur } = useAuthStore()
+  const userRole = utilisateur?.role ?? ''
+
+  // Filtre les items et sous-items selon le rôle de l'utilisateur connecté
+  const canSee = (roles?: string[]) => !roles || roles.includes(userRole)
+  const visibleGroups = navGroups
+    .map(group => ({
+      ...group,
+      items: group.items
+        .filter(item => canSee(item.roles))
+        .map(item =>
+          item.children
+            ? { ...item, children: item.children.filter(child => canSee(child.roles)) }
+            : item
+        )
+        .filter(item => !item.children || item.children.length > 0),
+    }))
+    .filter(group => group.items.length > 0)
+
   return (
     <aside
       className={cn(
@@ -500,7 +528,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* ── Navigation ── */}
       <nav className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden py-3 space-y-4">
-        {navGroups.map(group => (
+        {visibleGroups.map(group => (
           <div key={group.group}>
             {!collapsed && (
               <p

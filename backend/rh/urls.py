@@ -63,6 +63,10 @@ urlpatterns = [
     # ─── Brouillon de paie ───────────────────────────────────────────────────
     path("payroll-draft/", views.PayrollDraftView.as_view()),
 
+    # ─── Jours fériés ────────────────────────────────────────────────────────
+    path("jours-feries/",          views.JourFerieListCreateView.as_view()),
+    path("jours-feries/<int:pk>/", views.JourFerieDetailView.as_view()),
+
     # ─── Types de congé ───────────────────────────────────────────────────────
     path("types-conge/",        views.TypeCongeListCreateView.as_view()),
     path("types-conge/<int:pk>/", views.TypeCongeDetailView.as_view()),
@@ -73,8 +77,10 @@ urlpatterns = [
     path("demandes-conge/<int:pk>/action/", views.DemandeCongeActionView.as_view()),
 
     # ─── Soldes de congé ──────────────────────────────────────────────────────
-    path("soldes-conge/",          views.SoldeCongeListView.as_view()),
-    path("soldes-conge/<int:pk>/", views.SoldeCongeDetailView.as_view()),
+    # IMPORTANT : actualiser/ doit précéder <int:pk>/
+    path("soldes-conge/actualiser/", views.ActualiserSoldesView.as_view()),
+    path("soldes-conge/",            views.SoldeCongeListView.as_view()),
+    path("soldes-conge/<int:pk>/",   views.SoldeCongeDetailView.as_view()),
 
     # ─── Pointages (présences) ────────────────────────────────────────────────
     # IMPORTANT : bulk/ et summary/ doivent précéder <int:pk>/

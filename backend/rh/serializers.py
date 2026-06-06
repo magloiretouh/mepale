@@ -9,6 +9,7 @@ from .models import (
     DemandeConge,
     Employee,
     EmployeeCategory,
+    JourFerie,
     PayrollDraft,
     Pointage,
     PrimeType,
@@ -17,6 +18,12 @@ from .models import (
     SoldeConge,
     TypeConge,
 )
+
+
+class JourFerieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JourFerie
+        fields = ["id", "date", "name", "is_recurrent"]
 
 
 class EmployeeCategorySerializer(serializers.ModelSerializer):
@@ -133,7 +140,7 @@ class SocialRatesSerializer(serializers.ModelSerializer):
 class TypeCongeSerializer(serializers.ModelSerializer):
     class Meta:
         model = TypeConge
-        fields = ["id", "name", "description", "quota_annuel", "est_paye", "is_active", "created_at"]
+        fields = ["id", "name", "description", "quota_annuel", "mode_acquisition", "est_paye", "is_active", "created_at"]
 
 
 class DemandeCongeSerializer(serializers.ModelSerializer):
@@ -145,7 +152,8 @@ class DemandeCongeSerializer(serializers.ModelSerializer):
     def get_approuve_par_name(self, obj):
         if not obj.approuve_par:
             return None
-        return obj.approuve_par.get_full_name() or obj.approuve_par.username
+        full_name = f"{obj.approuve_par.prenom} {obj.approuve_par.nom}".strip()
+        return full_name or obj.approuve_par.username
 
     class Meta:
         model = DemandeConge
@@ -162,19 +170,21 @@ class DemandeCongeSerializer(serializers.ModelSerializer):
 
 
 class SoldeCongeSerializer(serializers.ModelSerializer):
-    employee_name   = serializers.CharField(source="employee.name", read_only=True)
-    type_conge_name = serializers.CharField(source="type_conge.name", read_only=True)
-    jours_restants  = serializers.SerializerMethodField()
+    employee_name        = serializers.CharField(source="employee.name", read_only=True)
+    type_conge_name      = serializers.CharField(source="type_conge.name", read_only=True)
+    mode_acquisition     = serializers.CharField(source="type_conge.mode_acquisition", read_only=True)
+    solde_actuel         = serializers.SerializerMethodField()
 
-    def get_jours_restants(self, obj):
+    def get_solde_actuel(self, obj):
         return float(obj.jours_acquis) - float(obj.jours_pris)
 
     class Meta:
         model = SoldeConge
         fields = [
             "id", "employee", "employee_name",
-            "type_conge", "type_conge_name",
-            "annee", "jours_acquis", "jours_pris", "jours_restants",
+            "type_conge", "type_conge_name", "mode_acquisition",
+            "jours_acquis", "jours_pris", "solde_actuel",
+            "date_derniere_acquisition",
         ]
 
 

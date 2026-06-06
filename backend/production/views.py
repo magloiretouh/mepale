@@ -91,14 +91,17 @@ class TypeArticleViewSet(viewsets.ModelViewSet):
 # ---------------------------------------------------------------------------
 
 class UniteMesureViewSet(viewsets.ModelViewSet):
-    queryset           = UniteMesure.objects.all()
-    serializer_class   = UniteMesureSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends    = [SearchFilter, OrderingFilter]
-    search_fields      = ['code', 'libelle']
-    ordering           = ['code']
-    # Données de référence : pas de pagination, tout retourner d'un coup
-    pagination_class   = None
+    queryset         = UniteMesure.objects.all()
+    serializer_class = UniteMesureSerializer
+    filter_backends  = [SearchFilter, OrderingFilter]
+    search_fields    = ['code', 'libelle']
+    ordering         = ['code']
+    pagination_class = None  # Données de référence : tout retourner d'un coup
+
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [IsAuthenticated()]
+        return [IsProductionStaff()]
 
 
 # ---------------------------------------------------------------------------
@@ -106,12 +109,16 @@ class UniteMesureViewSet(viewsets.ModelViewSet):
 # ---------------------------------------------------------------------------
 
 class ArticleViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    filter_backends    = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class    = ArticleFilter
     search_fields      = ['code', 'designation']
     ordering_fields    = ['designation', 'code', 'date_creation']
     ordering           = ['designation']
+
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve', 'prochain_code'):
+            return [IsAuthenticated()]
+        return [IsProductionStaff()]
 
     def get_queryset(self):
         return Article.objects.select_related('unite', 'type', 'unite_achat').filter(actif=True)
@@ -602,7 +609,7 @@ class OrdreFabricationViewSet(viewsets.ModelViewSet):
                 'id':              h.history_id,
                 'date':            h.history_date,
                 'user':            (
-                    h.history_user.get_full_name() or h.history_user.username
+                    (f"{h.history_user.prenom} {h.history_user.nom}".strip() or h.history_user.username)
                     if h.history_user else 'Système'
                 ),
                 'type':            HISTORY_TYPE_LABELS.get(h.history_type, h.history_type),
@@ -656,7 +663,7 @@ class OrdreFabricationViewSet(viewsets.ModelViewSet):
 # ---------------------------------------------------------------------------
 
 class LotViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsProductionStaff]
     filter_backends    = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class    = LotFilter
     search_fields      = ['numero_lot', 'article__designation', 'article__code']

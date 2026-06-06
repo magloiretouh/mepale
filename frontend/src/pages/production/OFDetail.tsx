@@ -101,22 +101,26 @@ function TabAffectations({ ofId }: { ofId: string }) {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [employeId, setEmployeId] = useState('')
-  const [role, setRole] = useState('')
 
   // Charger les employés
   const { data: employes } = useQuery({
     queryKey: ['employes-list'],
     queryFn: () => fetch('/api/v1/rh/employees/?active=1', {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
-    }).then(r => r.json()).then((d: { id: number; name: string }[]) => d),
+    }).then(r => r.json()).then((d: { id: number; name: string; role: string | null }[]) => d),
   })
 
+  const selectedEmploye = employes?.find(e => String(e.id) === employeId)
+
   const { mutate: affecter, isPending: affecting } = useMutation({
-    mutationFn: () => productionApi.addAffectation(ofId, { employe: employeId, role_prod: role }),
+    mutationFn: () => productionApi.addAffectation(ofId, {
+      employe: employeId,
+      role_prod: selectedEmploye?.role ?? '',
+    }),
     onSuccess: () => {
       toast.success('Employé affecté')
       qc.invalidateQueries({ queryKey: ['of', ofId] })
-      setShowForm(false); setEmployeId(''); setRole('')
+      setShowForm(false); setEmployeId('')
     },
     onError: () => toast.error("Erreur lors de l'affectation"),
   })
@@ -138,31 +142,19 @@ function TabAffectations({ ofId }: { ofId: string }) {
 
       {showForm && (
         <div className="p-3 rounded space-y-3" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-[--text-muted] mb-1 block">Employé</label>
-              <select
-                value={employeId}
-                onChange={e => setEmployeId(e.target.value)}
-                className="w-full text-xs px-2 py-1.5 rounded"
-                style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-              >
-                <option value="">Sélectionner…</option>
-                {(employes ?? []).map((e: { id: number; name: string }) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-[--text-muted] mb-1 block">Rôle</label>
-              <input
-                value={role}
-                onChange={e => setRole(e.target.value)}
-                placeholder="Ex: Opérateur, Contrôleur…"
-                className="w-full text-xs px-2 py-1.5 rounded"
-                style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-              />
-            </div>
+          <div>
+            <label className="text-xs text-[--text-muted] mb-1 block">Employé</label>
+            <select
+              value={employeId}
+              onChange={e => setEmployeId(e.target.value)}
+              className="w-full text-xs px-2 py-1.5 rounded"
+              style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+            >
+              <option value="">Sélectionner…</option>
+              {(employes ?? []).map(e => (
+                <option key={e.id} value={e.id}>{e.name}{e.role ? ` — ${e.role}` : ''}</option>
+              ))}
+            </select>
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="primary" onClick={() => affecter()} disabled={!employeId || affecting}>Confirmer</Button>

@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 
 import { Shell } from '@/components/layout/Shell'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
+import { RoleProtectedRoute } from '@/components/layout/RoleProtectedRoute'
 import { Dashboard } from '@/pages/Dashboard'
 import { Login } from '@/pages/Login'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
@@ -111,85 +112,99 @@ export default function App() {
               <Route path="profil"    element={<ProfilPage />} />
 
               {/* ── Production ── */}
-              <Route path="production">
-                <Route index element={<Navigate to="ordres-de-fabrication" replace />} />
-                <Route path="ordres-de-fabrication"          element={<OrdreFabricationList />} />
-                <Route path="ordres-de-fabrication/:id"      element={<OFDetail />} />
-                <Route path="catalogue"                      element={<ArticleList />} />
-                <Route path="nomenclatures"                  element={<NomenclatureList />} />
-                <Route path="lots"                           element={<LotList />} />
+              <Route element={<RoleProtectedRoute allowedRoles={['admin', 'directeur', 'resp_production', 'operateur']} />}>
+                <Route path="production">
+                  <Route index element={<Navigate to="ordres-de-fabrication" replace />} />
+                  <Route path="ordres-de-fabrication"     element={<OrdreFabricationList />} />
+                  <Route path="ordres-de-fabrication/:id" element={<OFDetail />} />
+                  <Route path="catalogue"                 element={<ArticleList />} />
+                  <Route path="nomenclatures"             element={<NomenclatureList />} />
+                  <Route path="lots"                      element={<LotList />} />
+                </Route>
               </Route>
 
               {/* ── Logistique ── */}
-              <Route path="logistique">
-                <Route index element={<Navigate to="stock" replace />} />
-                <Route path="fournisseurs"      element={<FournisseurList />} />
-                <Route path="fournisseurs/:id"  element={<FournisseurDetail />} />
-                <Route path="stock"           element={<StockList />} />
-                <Route path="bons-commande"      element={<BonCommandeList />} />
-                <Route path="bons-commande/:id"  element={<BonCommandeDetail />} />
-                <Route path="receptions"         element={<ReceptionList />} />
-                <Route path="receptions/:id"     element={<ReceptionDetail />} />
-                <Route path="demandes-achat"       element={<DemandeAchatList />} />
-                <Route path="demandes-achat/:id"  element={<DemandeAchatDetail />} />
-                <Route path="mouvements"      element={<MouvementList />} />
-                <Route path="inventaires"     element={<InventaireList />} />
-                <Route path="inventaires/:id" element={<InventaireDetail />} />
-                <Route path="factures"        element={<FactureList />} />
-                <Route path="factures/:id"    element={<FactureDetail />} />
+              <Route element={<RoleProtectedRoute allowedRoles={['admin', 'directeur', 'resp_logistique', 'magasinier']} />}>
+                <Route path="logistique">
+                  <Route index element={<Navigate to="stock" replace />} />
+                  <Route path="fournisseurs"     element={<FournisseurList />} />
+                  <Route path="fournisseurs/:id" element={<FournisseurDetail />} />
+                  <Route path="stock"            element={<StockList />} />
+                  <Route path="bons-commande"    element={<BonCommandeList />} />
+                  <Route path="bons-commande/:id" element={<BonCommandeDetail />} />
+                  <Route path="receptions"       element={<ReceptionList />} />
+                  <Route path="receptions/:id"   element={<ReceptionDetail />} />
+                  <Route path="demandes-achat"   element={<DemandeAchatList />} />
+                  <Route path="demandes-achat/:id" element={<DemandeAchatDetail />} />
+                  <Route path="mouvements"       element={<MouvementList />} />
+                  <Route path="inventaires"      element={<InventaireList />} />
+                  <Route path="inventaires/:id"  element={<InventaireDetail />} />
+                  <Route path="factures"         element={<FactureList />} />
+                  <Route path="factures/:id"     element={<FactureDetail />} />
+                </Route>
               </Route>
 
               {/* ── Commercial ── */}
-              <Route path="commercial">
-                <Route index element={<Navigate to="clients" replace />} />
-                <Route path="clients"              element={<ClientList />} />
-                <Route path="clients/:id"          element={<ClientDetail />} />
-                <Route path="devis"                element={<DevisList />} />
-                <Route path="devis/:id"            element={<DevisDetail />} />
-                <Route path="commandes"            element={<CommandeClientList />} />
-                <Route path="commandes/:id"        element={<CommandeClientDetail />} />
-                <Route path="bons-livraison"       element={<BonLivraisonList />} />
-                <Route path="bons-livraison/:id"   element={<BonLivraisonDetail />} />
-                <Route path="factures"             element={<FactureVenteList />} />
-                <Route path="factures/:id"         element={<FactureVenteDetail />} />
-                <Route path="retours"              element={<RetourClientList />} />
+              <Route element={<RoleProtectedRoute allowedRoles={['admin', 'directeur', 'commercial']} />}>
+                <Route path="commercial">
+                  <Route index element={<Navigate to="clients" replace />} />
+                  <Route path="clients"            element={<ClientList />} />
+                  <Route path="clients/:id"        element={<ClientDetail />} />
+                  <Route path="devis"              element={<DevisList />} />
+                  <Route path="devis/:id"          element={<DevisDetail />} />
+                  <Route path="commandes"          element={<CommandeClientList />} />
+                  <Route path="commandes/:id"      element={<CommandeClientDetail />} />
+                  <Route path="bons-livraison"     element={<BonLivraisonList />} />
+                  <Route path="bons-livraison/:id" element={<BonLivraisonDetail />} />
+                  <Route path="factures"           element={<FactureVenteList />} />
+                  <Route path="factures/:id"       element={<FactureVenteDetail />} />
+                  <Route path="retours"            element={<RetourClientList />} />
+                </Route>
               </Route>
 
               {/* ── RH ── */}
-              <Route path="rh">
-                <Route index element={<Navigate to="employes" replace />} />
-                <Route path="employes"      element={<Employes />} />
-                <Route path="employes/:id"  element={<EmployeDetail />} />
-                <Route path="paie"          element={<PayrollRunPage />} />
-                <Route path="paie/:type"    element={<BulkSimpleRunPage />} />
-                <Route path="conges"        element={<CongesPage />} />
-                <Route path="presences"     element={<PresencesPage />} />
+              <Route element={<RoleProtectedRoute allowedRoles={['admin', 'directeur', 'resp_rh']} />}>
+                <Route path="rh">
+                  <Route index element={<Navigate to="employes" replace />} />
+                  <Route path="employes"     element={<Employes />} />
+                  <Route path="employes/:id" element={<EmployeDetail />} />
+                  <Route path="paie"         element={<PayrollRunPage />} />
+                  <Route path="paie/:type"   element={<BulkSimpleRunPage />} />
+                  <Route path="conges"       element={<CongesPage />} />
+                  <Route path="presences"    element={<PresencesPage />} />
+                </Route>
               </Route>
 
               {/* ── Caisses ── */}
-              <Route path="caisses">
-                <Route index                element={<CaisseDashboard />} />
-                <Route path="en-attente"    element={<MouvementsEnAttente />} />
-                <Route path="transferts"    element={<TransfertsPage />} />
-                <Route path="parametres"    element={<ParametresCaissePage />} />
-                <Route path=":id"           element={<CaisseDetail />} />
+              <Route element={<RoleProtectedRoute allowedRoles={['admin', 'directeur', 'comptable', 'caissier']} />}>
+                <Route path="caisses">
+                  <Route index           element={<CaisseDashboard />} />
+                  <Route path="en-attente" element={<MouvementsEnAttente />} />
+                  <Route path="transferts" element={<TransfertsPage />} />
+                  <Route path="parametres" element={<ParametresCaissePage />} />
+                  <Route path=":id"       element={<CaisseDetail />} />
+                </Route>
               </Route>
 
               {/* ── Comptabilité ── */}
-              <Route path="comptabilite">
-                <Route index element={<ComptabilitePage />} />
+              <Route element={<RoleProtectedRoute allowedRoles={['admin', 'directeur', 'comptable']} />}>
+                <Route path="comptabilite">
+                  <Route index element={<ComptabilitePage />} />
+                </Route>
               </Route>
 
               {/* ── Administration ── */}
-              <Route path="administration">
-                <Route index element={<Navigate to="types-articles" replace />} />
-                <Route path="types-articles"         element={<TypeArticleList />} />
-                <Route path="unites-mesure"          element={<UniteMesureList />} />
-                <Route path="rh"                     element={<RhAdminPage />} />
-                <Route path="conditions-tarifaires"  element={<ConditionTarifaireList />} />
-                <Route path="utilisateurs"    element={<UtilisateursPage />} />
-                <Route path="parametres"      element={<ParametresPage />} />
-                <Route path="categories"      element={<CategoriesPage />} />
+              <Route element={<RoleProtectedRoute allowedRoles={['admin', 'directeur']} />}>
+                <Route path="administration">
+                  <Route index element={<Navigate to="types-articles" replace />} />
+                  <Route path="types-articles"        element={<TypeArticleList />} />
+                  <Route path="unites-mesure"         element={<UniteMesureList />} />
+                  <Route path="rh"                    element={<RhAdminPage />} />
+                  <Route path="conditions-tarifaires" element={<ConditionTarifaireList />} />
+                  <Route path="utilisateurs"          element={<UtilisateursPage />} />
+                  <Route path="parametres"            element={<ParametresPage />} />
+                  <Route path="categories"            element={<CategoriesPage />} />
+                </Route>
               </Route>
 
               {/* 404 fallback */}

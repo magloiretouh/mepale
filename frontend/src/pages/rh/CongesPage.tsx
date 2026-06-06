@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   CalendarDays, MoreHorizontal, CheckCircle2, XCircle,
-  SendHorizontal, Ban, Pencil, Trash2, Plus, RefreshCw,
+  SendHorizontal, Ban, Pencil, Trash2, Plus, RefreshCw, Check, X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button }  from '@/components/ui/Button'
@@ -18,7 +18,7 @@ import { Badge }   from '@/components/ui/Badge'
 import { Modal }   from '@/components/ui/Modal'
 import {
   rhApi,
-  type DemandeConge, type StatutDemande, type TypeConge, type SoldeConge,
+  type DemandeConge, type StatutDemande, type TypeConge, type SoldeConge, type JourFerie,
 } from '@/services/rh'
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -49,12 +49,13 @@ const STATUT_CFG: Record<StatutDemande, { variant: 'neutral' | 'info' | 'success
 // ─── Modal créer / modifier demande ──────────────────────────────────────────
 
 function ModalDemande({
-  onClose, employees, typesConge, demande,
+  onClose, employees, typesConge, demande, joursFeries,
 }: {
-  onClose:   () => void
-  employees: { id: number; name: string }[]
-  typesConge: TypeConge[]
-  demande?:  DemandeConge | null
+  onClose:      () => void
+  employees:    { id: number; name: string }[]
+  typesConge:   TypeConge[]
+  demande?:     DemandeConge | null
+  joursFeries:  JourFerie[]
 }) {
   const qc = useQueryClient()
   const isEdit = !!demande
@@ -65,14 +66,39 @@ function ModalDemande({
   const [dateFin,   setDateFin  ] = useState(demande?.date_fin   ?? '')
   const [motif,     setMotif    ] = useState(demande?.motif       ?? '')
 
+  // Construit un Set de "YYYY-MM-DD" fériées en tenant compte des récurrents
+  const feriesSet = useMemo(() => {
+    const set = new Set<string>()
+    if (!dateDebut || !dateFin) return set
+    const y1 = new Date(dateDebut).getFullYear()
+    const y2 = new Date(dateFin).getFullYear()
+    for (const jf of joursFeries) {
+      if (jf.is_recurrent) {
+        for (let y = y1; y <= y2; y++) {
+          const parts = jf.date.split('-')
+          const d = `${y}-${parts[1]}-${parts[2]}`
+          set.add(d)
+        }
+      } else {
+        set.add(jf.date)
+      }
+    }
+    return set
+  }, [dateDebut, dateFin, joursFeries])
+
   const nbJours = useMemo(() => {
     if (!dateDebut || !dateFin) return null
     const d1 = new Date(dateDebut), d2 = new Date(dateFin)
     if (d2 < d1) return null
     let j = 0, cur = new Date(d1)
-    while (cur <= d2) { if (cur.getDay() !== 0 && cur.getDay() !== 6) j++; cur.setDate(cur.getDate() + 1) }
+    while (cur <= d2) {
+      const day = cur.getDay()
+      const iso = cur.toISOString().slice(0, 10)
+      if (day !== 0 && day !== 6 && !feriesSet.has(iso)) j++
+      cur.setDate(cur.getDate() + 1)
+    }
     return j
-  }, [dateDebut, dateFin])
+  }, [dateDebut, dateFin, feriesSet])
 
   const { mutate, isPending } = useMutation({
     mutationFn: isEdit
@@ -250,7 +276,10 @@ function ActionMenuDemande({
   )
 
   const { statut } = demande
+  const hasAnyAction = statut !== 'approuvee' && statut !== 'refusee'
   const hasActionsBelow = statut === 'brouillon' || statut === 'soumise'
+
+  if (!hasAnyAction) return null
 
   const W = 192
   const dropdown = rect && open && createPortal(
@@ -276,7 +305,7 @@ function ActionMenuDemande({
         {statut === 'soumise'   && item('Approuver', <CheckCircle2 size={13} style={{ color: 'var(--status-success)' }} />, () => onAction('approuver'))}
         {statut === 'soumise'   && item('Refuser',   <XCircle size={13} />, () => onAction('refuser'), true)}
         {hasActionsBelow && <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '4px 0' }} />}
-        {(statut === 'brouillon' || statut === 'soumise' || statut === 'approuvee') &&
+        {(statut === 'brouillon' || statut === 'soumise') &&
           item('Annuler', <Ban size={13} />, () => onAction('annuler'), true)}
         {(statut === 'brouillon' || statut === 'annulee') &&
           item('Supprimer', <Trash2 size={13} />, onDelete, true)}
@@ -312,8 +341,9 @@ export function CongesPage() {
   const [filterType,   setFilterType  ] = useState('')
   const [filterAnnee,  setFilterAnnee ] = useState(String(new Date().getFullYear()))
 
-  // ── Filtres soldes ─────────────────────────────────────────────────────────
-  const [soldeAnnee, setSoldeAnnee] = useState(String(new Date().getFullYear()))
+  // ── État correction solde ─────────────────────────────────────────────────
+  const [correctionId,  setCorrectionId ] = useState<number | null>(null)
+  const [correctionVal, setCorrectionVal] = useState('')
 
   // ── Modals ────────────────────────────────────────────────────────────────
   const [modalCreate,  setModalCreate ] = useState(false)
@@ -331,6 +361,12 @@ export function CongesPage() {
     queryFn:  () => rhApi.listTypesConge().then(r => r.data),
   })
 
+  const { data: joursFeries = [] } = useQuery({
+    queryKey: ['rh-jours-feries'],
+    queryFn:  () => rhApi.listJoursFeries().then(r => r.data),
+    staleTime: 1000 * 60 * 60, // 1h — les jours fériés changent peu
+  })
+
   const { data: demandes = [], isLoading: demandesLoading } = useQuery({
     queryKey: ['rh-demandes-conge', filterEmp, filterStatut, filterType, filterAnnee],
     queryFn:  () => rhApi.listDemandesConge({
@@ -343,8 +379,8 @@ export function CongesPage() {
   })
 
   const { data: soldes = [], isLoading: soldesLoading } = useQuery({
-    queryKey: ['rh-soldes-conge', soldeAnnee],
-    queryFn:  () => rhApi.listSoldesConge({ annee: soldeAnnee }).then(r => r.data),
+    queryKey: ['rh-soldes-conge'],
+    queryFn:  () => rhApi.listSoldesConge().then(r => r.data),
     enabled: tab === 'soldes',
   })
 
@@ -371,8 +407,8 @@ export function CongesPage() {
       toast.error(e?.response?.data?.detail ?? 'Erreur.'),
   })
 
-  const { mutate: initialiserSoldes, isPending: initialising } = useMutation({
-    mutationFn: () => rhApi.initialiserSoldes(Number(soldeAnnee)),
+  const { mutate: actualiserSoldes, isPending: actualising } = useMutation({
+    mutationFn: () => rhApi.actualiserSoldes(),
     onSuccess: (res) => {
       toast.success(res.data.detail)
       qc.invalidateQueries({ queryKey: ['rh-soldes-conge'] })
@@ -380,6 +416,20 @@ export function CongesPage() {
     onError: (e: { response?: { data?: { detail?: string } } }) =>
       toast.error(e?.response?.data?.detail ?? 'Erreur.'),
   })
+
+  const { mutate: corrigerSolde, isPending: correcting } = useMutation({
+    mutationFn: ({ id, val }: { id: number; val: number }) => rhApi.corrigerSolde(id, val),
+    onSuccess: () => {
+      toast.success('Solde corrigé.')
+      qc.invalidateQueries({ queryKey: ['rh-soldes-conge'] })
+      setCorrectionId(null)
+      setCorrectionVal('')
+    },
+    onError: (e: { response?: { data?: { detail?: string } } }) =>
+      toast.error(e?.response?.data?.detail ?? 'Erreur.'),
+  })
+
+  const annees = Array.from({ length: 5 }, (_, i) => String(new Date().getFullYear() - 1 + i))
 
   // Grouper les soldes par employé
   const soldesParEmploye = useMemo(() => {
@@ -392,8 +442,6 @@ export function CongesPage() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [soldes])
 
-  const annees = Array.from({ length: 5 }, (_, i) => String(new Date().getFullYear() - 1 + i))
-
   // ─── Rendu ────────────────────────────────────────────────────────────────
   return (
     <>
@@ -404,6 +452,7 @@ export function CongesPage() {
           employees={employees}
           typesConge={typesConge}
           demande={modalEdit}
+          joursFeries={joursFeries}
         />
       )}
       {modalAction && (
@@ -433,9 +482,9 @@ export function CongesPage() {
             </Button>
           )}
           {tab === 'soldes' && (
-            <Button variant="secondary" size="sm" icon={<RefreshCw size={13} />} loading={initialising}
-              onClick={() => initialiserSoldes()}>
-              Initialiser {soldeAnnee}
+            <Button variant="secondary" size="sm" icon={<RefreshCw size={13} />} loading={actualising}
+              onClick={() => actualiserSoldes()}>
+              Calculer les acquisitions
             </Button>
           )}
         </div>
@@ -581,15 +630,9 @@ export function CongesPage() {
         {/* ══════════════════════════════════════════════════════════════════ */}
         {tab === 'soldes' && (
           <>
-            <div className="flex items-center gap-3" style={{ marginBottom: 16 }}>
-              <select className={cn('h-9 bg-[--bg-elevated] border border-[--border] rounded text-sm pl-3 pr-8 text-[--text-primary] appearance-none focus:outline-none focus:border-[--accent]')}
-                style={{ minWidth: 100 }} value={soldeAnnee} onChange={e => setSoldeAnnee(e.target.value)}>
-                {annees.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Cliquez sur "Initialiser {soldeAnnee}" pour créer les soldes manquants avec le quota par défaut de chaque type.
-              </p>
-            </div>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+              Cliquez sur "Calculer les acquisitions" pour créditer les jours acquis depuis la dernière mise à jour (types Mensuel et Annuel uniquement).
+            </p>
 
             {soldesLoading && (
               <p className="text-sm text-center py-12" style={{ color: 'var(--text-muted)' }}>Chargement…</p>
@@ -598,7 +641,7 @@ export function CongesPage() {
             {!soldesLoading && soldesParEmploye.length === 0 && (
               <div className="flex flex-col items-center py-16" style={{ color: 'var(--text-muted)' }}>
                 <CalendarDays size={42} style={{ opacity: 0.2, marginBottom: 12 }} />
-                <p className="text-sm">Aucun solde pour {soldeAnnee}. Cliquez sur "Initialiser".</p>
+                <p className="text-sm">Aucun solde. Créez des types de congés et soumettez des demandes.</p>
               </div>
             )}
 
@@ -608,9 +651,9 @@ export function CongesPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr style={{ backgroundColor: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
-                        {['Employé', 'Type de congé', 'Acquis', 'Pris', 'Restant'].map((col, i) => (
+                        {['Employé', 'Type de congé', 'Mode', 'Acquis', 'Pris', 'Restant', ''].map((col, i) => (
                           <th key={i} className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-left whitespace-nowrap"
-                            style={{ color: i === 4 ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                            style={{ color: i === 5 ? 'var(--accent)' : 'var(--text-secondary)' }}>
                             {col}
                           </th>
                         ))}
@@ -627,15 +670,69 @@ export function CongesPage() {
                             <td className="px-3 py-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
                               {s.type_conge_name}
                             </td>
+                            <td className="px-3 py-2.5">
+                              <span
+                                className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                                style={{
+                                  backgroundColor: s.mode_acquisition === 'libre'
+                                    ? 'var(--bg-surface)'
+                                    : 'var(--accent-dim)',
+                                  color: s.mode_acquisition === 'libre'
+                                    ? 'var(--text-muted)'
+                                    : 'var(--accent)',
+                                  border: '1px solid var(--border)',
+                                }}
+                              >
+                                {s.mode_acquisition}
+                              </span>
+                            </td>
                             <td className="px-3 py-2.5 font-data text-center" style={{ color: 'var(--text-secondary)' }}>
-                              {s.jours_acquis}j
+                              {parseFloat(s.jours_acquis).toFixed(1)}j
                             </td>
                             <td className="px-3 py-2.5 font-data text-center" style={{ color: 'var(--text-muted)' }}>
-                              {s.jours_pris}j
+                              {parseFloat(s.jours_pris).toFixed(1)}j
                             </td>
-                            <td className="px-3 py-2.5 font-data font-semibold text-center"
-                              style={{ color: s.jours_restants < 0 ? 'var(--status-danger)' : s.jours_restants === 0 ? 'var(--text-muted)' : 'var(--accent)' }}>
-                              {s.jours_restants}j
+                            <td className="px-3 py-2.5 font-data font-semibold text-center">
+                              {correctionId === s.id ? (
+                                <div className="flex items-center gap-1 justify-center">
+                                  <input
+                                    type="number" step="0.5" min="0"
+                                    value={correctionVal}
+                                    onChange={e => setCorrectionVal(e.target.value)}
+                                    className="w-20 h-7 bg-[--bg-elevated] border border-[--accent] rounded px-2 text-xs text-right text-[--text-primary] focus:outline-none"
+                                    autoFocus
+                                  />
+                                  <button
+                                    disabled={correcting}
+                                    onClick={() => corrigerSolde({ id: s.id, val: parseFloat(correctionVal) })}
+                                    className="p-1 rounded" style={{ color: 'var(--accent)' }}
+                                  >
+                                    <Check size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => { setCorrectionId(null); setCorrectionVal('') }}
+                                    className="p-1 rounded" style={{ color: 'var(--text-muted)' }}
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ color: s.solde_actuel < 0 ? 'var(--status-danger)' : s.solde_actuel === 0 ? 'var(--text-muted)' : 'var(--accent)' }}>
+                                  {s.solde_actuel.toFixed(1)}j
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 text-right">
+                              {correctionId !== s.id && (
+                                <button
+                                  onClick={() => { setCorrectionId(s.id); setCorrectionVal(String(s.solde_actuel)) }}
+                                  className="p-1.5 rounded transition-all hover:opacity-70"
+                                  style={{ color: 'var(--text-muted)' }}
+                                  title="Corriger le solde"
+                                >
+                                  <Pencil size={12} />
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))

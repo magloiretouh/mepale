@@ -152,13 +152,25 @@ export interface CnssDeclaration {
   }
 }
 
+// ── Jours fériés ──────────────────────────────────────────────────────────────
+
+export interface JourFerie {
+  id: number
+  date: string
+  name: string
+  is_recurrent: boolean
+}
+
 // ── Congés ────────────────────────────────────────────────────────────────────
+
+export type ModeAcquisition = 'mensuel' | 'annuel' | 'libre'
 
 export interface TypeConge {
   id: number
   name: string
   description: string | null
   quota_annuel: string
+  mode_acquisition: ModeAcquisition
   est_paye: boolean
   is_active: boolean
   created_at: string
@@ -191,10 +203,11 @@ export interface SoldeConge {
   employee_name: string
   type_conge: number
   type_conge_name: string
-  annee: number
+  mode_acquisition: ModeAcquisition
   jours_acquis: string
   jours_pris: string
-  jours_restants: number
+  solde_actuel: number
+  date_derniere_acquisition: string | null
 }
 
 // ── Présences ─────────────────────────────────────────────────────────────────
@@ -368,6 +381,19 @@ export const rhApi = {
   adminUpdateSocialRates: (data: Partial<SocialRates & { company_name: string; company_address: string }>) =>
     api.put<SocialRates>('/rh/admin/social-rates/', data),
 
+  // ── Jours fériés ──────────────────────────────────────────────────────────
+  listJoursFeries: () =>
+    api.get<JourFerie[]>('/rh/jours-feries/'),
+
+  createJourFerie: (data: Omit<JourFerie, 'id'>) =>
+    api.post<JourFerie>('/rh/jours-feries/', data),
+
+  updateJourFerie: (id: number, data: Partial<Omit<JourFerie, 'id'>>) =>
+    api.put<JourFerie>(`/rh/jours-feries/${id}/`, data),
+
+  deleteJourFerie: (id: number) =>
+    api.delete(`/rh/jours-feries/${id}/`),
+
   // ── Types de congé ────────────────────────────────────────────────────────
   listTypesConge: (actifOnly = false) =>
     api.get<TypeConge[]>('/rh/types-conge/', { params: actifOnly ? { actif_only: 1 } : undefined }),
@@ -411,14 +437,14 @@ export const rhApi = {
     api.post<DemandeConge>(`/rh/demandes-conge/${id}/action/`, { action, commentaire_rh }),
 
   // ── Soldes de congé ───────────────────────────────────────────────────────
-  listSoldesConge: (params?: { employee_id?: number | string; annee?: number | string; type_conge_id?: number }) =>
+  listSoldesConge: (params?: { employee_id?: number | string; type_conge_id?: number }) =>
     api.get<SoldeConge[]>('/rh/soldes-conge/', { params }),
 
-  initialiserSoldes: (annee: number) =>
-    api.post<{ detail: string }>('/rh/soldes-conge/', { annee }),
+  actualiserSoldes: () =>
+    api.post<{ detail: string; date: string }>('/rh/soldes-conge/actualiser/'),
 
-  updateSoldeConge: (id: number, data: { jours_acquis?: number; jours_pris?: number }) =>
-    api.put<SoldeConge>(`/rh/soldes-conge/${id}/`, data),
+  corrigerSolde: (id: number, solde_actuel: number) =>
+    api.put<SoldeConge>(`/rh/soldes-conge/${id}/`, { solde_actuel }),
 
   // ── Pointages ─────────────────────────────────────────────────────────────
   listPointages: (params?: { date?: string; employee_id?: number | string; mois?: string }) =>

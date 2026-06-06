@@ -15,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from authentication.permissions import IsLogistiqueStaff, IsAdminOrDirecteur
+from authentication.permissions import IsLogistiqueStaff, IsLogistiqueManager, IsAdminOrDirecteur
 from .models import (
     Fournisseur, ContactFournisseur, FournisseurArticle, ContratFournisseur,
     StockArticle, MouvementStock,
@@ -180,15 +180,23 @@ class EvaluationFournisseurViewSet(viewsets.ModelViewSet):
 # ---------------------------------------------------------------------------
 
 class StockArticleViewSet(viewsets.ModelViewSet):
-    """Stock — lecture + mise à jour des seuils."""
-    permission_classes = [IsAuthenticated]
-    serializer_class   = StockArticleSerializer
-    filter_backends    = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class    = StockFilter
-    search_fields      = ['article__designation', 'article__code']
-    ordering_fields    = ['quantite_disponible', 'article__designation']
-    ordering           = ['article__designation']
-    http_method_names  = ['get', 'patch', 'head', 'options']   # pas de POST/DELETE
+    """Stock — lecture (tous) + mise à jour seuils et génération DA (logistique)."""
+    serializer_class  = StockArticleSerializer
+    filter_backends   = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class   = StockFilter
+    search_fields     = ['article__designation', 'article__code']
+    ordering_fields   = ['quantite_disponible', 'article__designation']
+    ordering          = ['article__designation']
+    http_method_names = ['get', 'patch', 'head', 'options']   # pas de POST/DELETE
+
+    def get_permissions(self):
+        if self.action == 'partial_update':
+            # Modification des seuils : admin, directeur, resp. logistique uniquement
+            return [IsLogistiqueManager()]
+        if self.action == 'generer_da':
+            # Génération DA depuis stock sous seuil : tout le staff logistique
+            return [IsLogistiqueStaff()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         return StockArticle.objects.select_related('article__unite')
@@ -742,7 +750,7 @@ class MouvementStockViewSet(viewsets.ModelViewSet):
 # ---------------------------------------------------------------------------
 
 class DemandeAchatViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLogistiqueStaff]
     filter_backends    = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields   = ['statut', 'urgence']
     search_fields      = ['reference']
